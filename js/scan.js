@@ -66,8 +66,19 @@ function applyFilter(cv, enh){
     const total = n / 4;
     let acc = 0, lo = 0;
     for (let v = 0; v < 256; v++){ acc += hist[v]; if (acc > total * 0.012){ lo = v; break; } }
-    lo = Math.min(lo, 170);
-    const hi = 246, k = 255 / Math.max(30, hi - lo);
+
+    // จุดขาว = "ระดับของกระดาษ" (median ของพิกเซลฝั่งสว่าง)
+    // ห้ามใช้ percentile บนสุด เพราะโดนแสงสะท้อนจุดเดียวดึงขึ้นไป
+    // แล้วกระดาษทั้งแผ่นจะจบต่ำกว่าขาว = ภาพหม่นทั้งใบ
+    let bright = 0;
+    for (let v = 128; v < 256; v++) bright += hist[v];
+    let paper = 238;
+    if (bright > total * 0.05){
+      let a2 = 0;
+      for (let v = 128; v < 256; v++){ a2 += hist[v]; if (a2 >= bright / 2){ paper = v; break; } }
+    }
+    lo = Math.max(0, Math.min(lo, paper - 55));
+    const k = 255 / Math.max(30, paper - lo);
     const lut = new Uint8Array(256);
     for (let v = 0; v < 256; v++){
       const x = (v - lo) * k;
