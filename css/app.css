@@ -217,6 +217,10 @@ body.flow #tabs{display:none}
 .sw{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);cursor:pointer;
     transition:box-shadow var(--tap)}
 .sw.on{box-shadow:0 0 0 2.5px var(--accent)}
+.sw.custom{position:relative;overflow:hidden;display:block;padding:0;
+  background:conic-gradient(from 0deg,#ff3b3b,#ffb300,#c6ff00,#00d68f,#00a8ff,#7c5cff,#ff3b3b)}
+.sw.custom input{position:absolute;inset:-6px;width:calc(100% + 12px);height:calc(100% + 12px);
+  opacity:0;cursor:pointer;border:0;padding:0}
 
 .pick{
   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -259,8 +263,14 @@ body.flow #tabs{display:none}
 .obox.on{display:block}
 .obox img{width:100%;height:100%;object-fit:contain;pointer-events:none}
 .obox .handle{position:absolute;width:26px;height:26px;border-radius:50%;
-  background:var(--t-violet);border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2)}
-.obox .handle.br{right:-13px;bottom:-13px}
+  background:var(--t-violet);border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.2);
+  display:flex;align-items:center;justify-content:center;touch-action:none}
+.obox .handle.br{right:-13px;bottom:-13px;cursor:nwse-resize}
+.obox .handle.rot{top:-46px;left:50%;transform:translateX(-50%);cursor:grab;color:#fff}
+.obox .handle.rot .ic{width:15px;height:15px}
+.obox .handle.rot:active{cursor:grabbing}
+.obox .rot-stem{position:absolute;top:-24px;left:50%;width:2px;height:24px;
+  background:var(--t-violet);transform:translateX(-50%)}
 
 /* ---------- done screen ---------- */
 .done-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -322,6 +332,20 @@ a.btn{text-decoration:none;display:block}
 textarea.inp{resize:vertical;min-height:84px;line-height:1.6;font-family:inherit}
 
 /* ---------- ขั้นเลือกไฟล์ (กันเข้าเครื่องมือแบบมือเปล่า) ---------- */
+#histPicker{
+  position:fixed;inset:0;z-index:70;display:none;
+  align-items:flex-end;justify-content:center;background:rgba(10,20,22,.42);
+}
+#histPicker.on{display:flex}
+#histPickList label.row{cursor:pointer}
+#histPickList .pk-empty{padding:10px 2px}
+
+#nextStep{
+  position:fixed;inset:0;z-index:70;display:none;
+  align-items:flex-end;justify-content:center;background:rgba(10,20,22,.42);
+}
+#nextStep.on{display:flex}
+
 #needFiles{
   position:fixed;inset:0;z-index:70;display:none;
   align-items:flex-end;justify-content:center;background:rgba(10,20,22,.42);

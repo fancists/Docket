@@ -132,16 +132,13 @@ function makeStampPng(lines, color, strike){
   return { dataUrl: cv.toDataURL('image/png'), ratio: w / h };
 }
 
-/* ---------- apply / clear ---------- */
-async function applyWatermark(){
-  if (!App.pages.length){ toast('ยังไม่มีหน้า'); return; }
-  const targets = scopePages(segScope('wmScopeSeg'));
-  if (!targets.length){ toast('เลือกหน้าที่จะใส่ก่อน'); return; }
-
+/* ---------- อ่านค่าที่ตั้งไว้ในฟอร์ม ยังไม่ผูกกับหน้าไหน ----------
+   ใช้ร่วมกันทั้งตอนพรีวิวสด (wmDraw) และตอนกดใส่จริง (applyWatermark) */
+function buildWmBase(){
   let stamp = null;
   if (WM.kind === 'stamp'){
-    const lines = $('wmStampText').value.split('\n').map(t => t.trim()).filter(Boolean);
-    if (!lines.length){ toast('พิมพ์ข้อความที่จะคร่อมก่อน'); return; }
+    const lines = ($('wmStampText').value || '').split('\n').map(t => t.trim()).filter(Boolean);
+    if (!lines.length) return { err: 'พิมพ์ข้อความที่จะคร่อมก่อน' };
     stamp = makeStampPng(lines, WM.color, $('wmStrike').checked);
   }
 
@@ -160,8 +157,8 @@ async function applyWatermark(){
     layout: WM.layout,
     color: WM.color
   };
-  if (WM.kind === 'text' && !base.text.trim()){ toast('ใส่ข้อความลายน้ำก่อน'); return; }
-  if (WM.kind === 'img' && !base.dataUrl){ toast('เลือกรูปลายน้ำก่อน'); return; }
+  if (WM.kind === 'text' && !base.text.trim()) return { err: 'ใส่ข้อความลายน้ำก่อน' };
+  if (WM.kind === 'img' && !base.dataUrl) return { err: 'เลือกรูปลายน้ำก่อน' };
 
   // โหมด "วางเอง": แปลงทุกชนิดเป็นรูปก่อน จะได้ลาก/ย่อขยายด้วยกล่องเดียวกันหมด
   if (base.layout === 'free'){
@@ -171,18 +168,80 @@ async function applyWatermark(){
     }
     base.type = 'img';
   }
+  return { base };
+}
+
+/* คำนวณกล่อง w/h/x/y ของโหมด "วางเอง" — ขึ้นกับสัดส่วนหน้านั้นๆ จึงทำต่อหน้า */
+function sizeFreeOverlay(o, p){
+  const v = pageVisibleSize(p);
+  o.w = Math.min(0.9, 0.5 * (o.size / 100) * 1.4);
+  o.h = o.w * v.w / (o.ratio * v.h);
+  o.x = 0.5 - o.w / 2;
+  o.y = 0.5 - o.h / 2;
+}
+
+/* ---------- พรีวิวสดก่อนกดใส่จริง ---------- */
+let _wmDrawToken = 0;
+async function wmDraw(){
+  const cv = $('wmCv');
+  if (!cv) return;
+  const maxH = Math.min(360, window.innerHeight * 0.4);
+  const targets = scopePages(segScope('wmScopeSeg'));
+  const p = targets[0] || App.pages[0];
+  const ctx = cv.getContext('2d');
+
+  if (!p){
+    const H = Math.round(maxH), W = Math.round(H * 0.75);
+    cv.width = W; cv.height = H; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx.fillStyle = '#f1f3f5'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#9aa4b2'; ctx.font = '600 13px Sarabun, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('ยังไม่มีหน้าเอกสาร', W / 2, H / 2);
+    return;
+  }
+
+  const tok = ++_wmDrawToken;
+  const src = await renderPageCanvas(p, 640);
+  if (tok !== _wmDrawToken) return;
+  const vsz = pageVisibleSize(p);
+  const H = Math.round(maxH), W = Math.round(H * vsz.w / vsz.h);
+  cv.width = W; cv.height = H; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(src, 0, 0, W, H);
+
+  // วาดของเดิมบนหน้านั้นก่อน ยกเว้นช่องเดียวกับที่กำลังพรีวิว (เดี๋ยวถูกแทนที่ตอนกดใส่จริง)
+  const slot = WM.kind === 'stamp' ? 'stamp' : 'wm';
+  for (const o of p.overlays){
+    if (o.kind === 'wm' && (o.slot || 'wm') === slot) continue;
+    await hydrateOverlay(o);
+    if (tok !== _wmDrawToken) return;
+    if (o.kind === 'wm' && !isFree(o)) paintWM(ctx, o, W, H); else paintObj(ctx, o, W, H);
+  }
+
+  const r = buildWmBase();
+  if (!r.err){
+    const o = Object.assign({}, r.base);
+    if (o.layout === 'free') sizeFreeOverlay(o, p);
+    await hydrateOverlay(o);
+    if (tok !== _wmDrawToken) return;
+    if (isFree(o)) paintObj(ctx, o, W, H); else paintWM(ctx, o, W, H);
+  }
+}
+
+/* ---------- apply / clear ---------- */
+async function applyWatermark(){
+  if (!App.pages.length){ toast('ยังไม่มีหน้า'); return; }
+  const targets = scopePages(segScope('wmScopeSeg'));
+  if (!targets.length){ toast('เลือกหน้าที่จะใส่ก่อน'); return; }
+
+  const r = buildWmBase();
+  if (r.err){ toast(r.err); return; }
+  const base = r.base;
 
   busy(true, WM.kind === 'stamp' ? 'กำลังคร่อมข้อความ…' : 'กำลังใส่ลายน้ำ…');
   for (const p of targets){
     p.overlays = p.overlays.filter(o => !(o.kind === 'wm' && (o.slot || 'wm') === base.slot));
     const o = Object.assign({}, base);
-    if (base.layout === 'free'){
-      const v = pageVisibleSize(p);
-      o.w = Math.min(0.9, 0.5 * (o.size / 100) * 1.4);
-      o.h = o.w * v.w / (o.ratio * v.h);
-      o.x = 0.5 - o.w / 2;
-      o.y = 0.5 - o.h / 2;
-    }
+    if (base.layout === 'free') sizeFreeOverlay(o, p);
     await hydrateOverlay(o);
     p.overlays.push(o);
     await refreshThumb(p);
@@ -196,7 +255,12 @@ async function applyWatermark(){
       base.slot === 'stamp' ? 'วางตราคร่อม' : 'วางลายน้ำ');
     return;
   }
-  toast((WM.kind === 'stamp' ? 'คร่อมข้อความ ' : 'ใส่ลายน้ำ ') + targets.length + ' หน้า');
+  wmDraw();
+  offerNextStep(
+    WM.kind === 'stamp' ? 'คร่อมข้อความแล้ว' : 'ใส่ลายน้ำแล้ว',
+    targets.length + ' หน้า — ทำอะไรต่อดี?',
+    'wm'
+  );
 }
 
 async function clearWatermark(){

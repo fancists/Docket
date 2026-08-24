@@ -220,14 +220,28 @@ function wirePlaceBox(){
     const o = p && placePick(p);
     if (!o) return;
     const cv = $('placeCv');
-    mode = e.target.classList.contains('handle') ? 'size' : 'move';
-    st = { x: e.clientX, y: e.clientY, o: Object.assign({}, o), W: cv.width, H: cv.height, ref: o, p };
+    const isHandle = e.target.classList.contains('handle');
+    mode = isHandle ? (e.target.classList.contains('rot') ? 'rotate' : 'size') : 'move';
+    const rect = box.getBoundingClientRect();
+    st = {
+      x: e.clientX, y: e.clientY, o: Object.assign({}, o), W: cv.width, H: cv.height, ref: o, p,
+      cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2,
+      ang0: Math.atan2(e.clientY - (rect.top + rect.height / 2), e.clientX - (rect.left + rect.width / 2)) * 180 / Math.PI,
+      rot0: o.rot || 0
+    };
     box.setPointerCapture(e.pointerId); e.preventDefault();
   });
   box.addEventListener('pointermove', e => {
     if (!mode) return;
-    const dx = (e.clientX - st.x) / st.W, dy = (e.clientY - st.y) / st.H;
     const o = st.ref;
+    if (mode === 'rotate'){
+      const ang = Math.atan2(e.clientY - st.cy, e.clientX - st.cx) * 180 / Math.PI;
+      o.rot = Math.round(st.rot0 - (ang - st.ang0));
+      $('placeBox').style.transform = 'rotate(' + (-o.rot) + 'deg)';
+      e.preventDefault();
+      return;
+    }
+    const dx = (e.clientX - st.x) / st.W, dy = (e.clientY - st.y) / st.H;
     if (mode === 'move'){
       o.x = Math.max(-0.05, Math.min(1 - o.w * 0.3, st.o.x + dx));
       o.y = Math.max(-0.05, Math.min(1 - o.h * 0.3, st.o.y + dy));
@@ -273,4 +287,9 @@ async function placeDone(){
   busy(false);
   renderGrid();
   showView('pages');
+  offerNextStep(
+    Place.kind === 'sig' ? 'ใส่ลายเซ็นแล้ว' : 'วางลายน้ำแล้ว',
+    Sig.list.length + ' หน้า — ทำอะไรต่อดี?',
+    Place.kind === 'sig' ? 'sign' : 'wm'
+  );
 }

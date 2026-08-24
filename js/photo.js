@@ -45,11 +45,11 @@ async function photoLoad(file){
   busy(true, 'กำลังเปิดรูป…');
   try{
     const bm = await blobToBitmap(file);
-    const sc = Math.min(1, 2000 / Math.max(bm.width, bm.height));
+    const sc = Math.min(1, 2600 / Math.max(bm.width, bm.height));
     const cv = mkCanvas(bm.width * sc, bm.height * sc);
     cv.getContext('2d').drawImage(bm, 0, 0, cv.width, cv.height);
     if (bm.close) bm.close();
-    Photo.blob = await canvasToBlob(cv, 'image/jpeg', 0.95);
+    Photo.blob = await canvasToBlob(cv, 'image/jpeg', 0.97);
     Photo.bm = await blobToBitmap(Photo.blob);
     Photo.zoom = 1; Photo.ox = 0; Photo.oy = 0;
     photoDraw();
@@ -256,7 +256,7 @@ async function photoMakePdf(){
     const L = L0, s = Photo.size;
     const cv = photoCompose();
     const transparent = !Photo.bg;
-    const blob = await canvasToBlob(cv, transparent ? 'image/png' : 'image/jpeg', 0.95);
+    const blob = await canvasToBlob(cv, transparent ? 'image/png' : 'image/jpeg', 0.97);
     const bytes = new Uint8Array(await blob.arrayBuffer());
 
     const doc = await PDFLib.PDFDocument.create();
@@ -289,7 +289,8 @@ async function photoMakePdf(){
       sub: Photo.paper === 'single'
         ? 'ไฟล์ขนาด ' + s.w + ' × ' + s.h + ' มม.'
         : L.total + ' รูปบนกระดาษ ' + (photoPaperDef() || {}).label +
-          ' — สั่งพิมพ์แบบ “ขนาดจริง 100%” อย่าให้ย่อพอดีหน้า'
+          ' — สั่งพิมพ์แบบ “ขนาดจริง 100%” อย่าให้ย่อพอดีหน้า',
+      continueTo: 'wm'
     });
   } catch(e){
     console.error(e); toast('สร้างไฟล์ไม่สำเร็จ: ' + e.message, 4000);

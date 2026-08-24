@@ -244,6 +244,7 @@ function showDone(blob, name, opts){
   $('doneS').textContent = opts.sub || 'ไฟล์พร้อมบันทึกลงเครื่องหรือส่งต่อแล้ว';
   $('doneNm').textContent = name;
   $('doneSz').textContent = kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.round(kb) + ' KB';
+  historyAdd({ name, mime: blob.type, blob, title: opts.title, sub: opts.sub });
 
   const acts = $('doneActions');
   acts.innerHTML = '';
@@ -259,6 +260,26 @@ function showDone(blob, name, opts){
     b.onclick = () => navigator.share({ files: [file], title: name }).catch(() => {});
     acts.appendChild(b);
   }
+
+  // เครื่องมือเดี่ยว (รูปติดบัตร/สำเนาบัตร) ไม่ได้ผูกกับ "หน้าเอกสาร" — ปุ่มนี้ดึงไฟล์ที่เพิ่งสร้าง
+  // กลับเข้าไปในหน้าเอกสาร แล้วพาไปเครื่องมือลายน้ำต่อทันที ไม่ต้องออกไปกด "เปิดไฟล์ PDF" เอง
+  if (opts.continueTo){
+    const c = document.createElement('button');
+    c.className = 'btn ghost'; c.textContent = 'ใส่ลายน้ำต่อ';
+    c.onclick = async () => {
+      busy(true, 'กำลังเปิดไฟล์…');
+      await addPdfFiles([file]);
+      busy(false);
+      showView(opts.continueTo);
+    };
+    acts.appendChild(c);
+  }
+
+  const h = document.createElement('button');
+  h.className = 'btn ghost'; h.textContent = 'ดูไฟล์ย้อนหลัง';
+  h.onclick = () => showView('history');
+  acts.appendChild(h);
+
   const d = document.createElement('button');
   d.className = 'btn ghost'; d.textContent = 'เสร็จสิ้น';
   d.onclick = () => showView('home');

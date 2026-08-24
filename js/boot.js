@@ -28,7 +28,7 @@ function swatchWire(id, fn){
   if (!box) return;
   box.addEventListener('click', e => {
     const b = e.target.closest('.sw');
-    if (!b) return;
+    if (!b || b.dataset.c === undefined) return;   // สวอตช์สีกำหนดเอง (custom color) จัดการแยกต่างหาก
     box.querySelectorAll('.sw').forEach(x => x.classList.remove('on'));
     b.classList.add('on');
     fn(b.dataset.c);
@@ -37,7 +37,7 @@ function swatchWire(id, fn){
 
 let _openScanAfterImport = false;
 
-function boot(){
+async function boot(){
   /* ---------- navigation ---------- */
   $('tabs').addEventListener('click', e => {
     const b = e.target.closest('button');
@@ -46,14 +46,31 @@ function boot(){
   document.querySelectorAll('.back').forEach(b =>
     b.addEventListener('click', () => showView(b.dataset.back)));
   $('lnkAllPages').onclick = () => showView('pages');
+  $('lnkHistory').onclick = () => showView('history');
+  wireHistory();
 
   /* ---------- home tiles ---------- */
-  document.querySelector('.tools').addEventListener('click', e => {
+  // ผูกกับทั้งหน้าแรก ไม่ใช่แค่ .tools อันแรก เพราะตอนนี้มีสองกลุ่ม (เครื่องมือทั่วไป / เอกสารประจำตัว)
+  $('view-home').addEventListener('click', e => {
     const t = e.target.closest('.tool-tile');
     if (!t) return;
     const k = t.dataset.tool;
-    if (k === 'scan'){ _openScanAfterImport = true; $('inCam').click(); }
-    else if (k === 'combine'){ $('inPdf').click(); }
+    if (k === 'scan'){
+      _openScanAfterImport = true;
+      $('nfTitle').textContent = 'สแกนเอกสาร';
+      $('nfWhat').textContent = 'ถ่ายรูปใหม่ หรือเลือกรูปที่มีอยู่แล้วมาแต่งก็ได้';
+      $('needFiles').querySelector('[data-nf="pdf"]').style.display = 'none';
+      $('needFiles').querySelector('[data-nf="hist"]').style.display = 'none';
+      $('needFiles').classList.add('on');
+    }
+    else if (k === 'combine'){
+      _openScanAfterImport = false;
+      $('nfTitle').textContent = 'รวมไฟล์ PDF';
+      $('nfWhat').textContent = 'เลือกไฟล์ที่จะรวม — จากเครื่องหรือจากไฟล์ที่เคยสร้างก็ได้';
+      $('needFiles').querySelector('[data-nf="pdf"]').style.display = '';
+      $('needFiles').querySelector('[data-nf="hist"]').style.display = '';
+      $('needFiles').classList.add('on');
+    }
     else if (k === 'redact'){ showView('redactPick'); }
     else showView(k);
   });
@@ -63,7 +80,23 @@ function boot(){
     const k = b.dataset.nf;
     $('needFiles').classList.remove('on');
     if (k === 'close'){ showView('home'); return; }
+    if (k === 'hist'){ openHistPicker(); return; }
     $(k === 'cam' ? 'inCam' : k === 'img' ? 'inImg' : 'inPdf').click();
+  });
+  $('btnPickHist').onclick = openHistPicker;
+  wireHistPicker();
+
+  $('nextStep').addEventListener('click', e => {
+    const act = e.target.closest('[data-ns-action]');
+    if (act){
+      $('nextStep').classList.remove('on');
+      if (act.dataset.nsAction === 'scanMore'){ _openScanAfterImport = true; $('inCam').click(); }
+      return;
+    }
+    const b = e.target.closest('[data-ns]');
+    if (!b){ if (e.target.id === 'nextStep') $('nextStep').classList.remove('on'); return; }
+    $('nextStep').classList.remove('on');
+    if (b.dataset.ns !== 'stay') showView(b.dataset.ns);
   });
 
   $('recentList').addEventListener('click', e => {
@@ -86,6 +119,7 @@ function boot(){
       if (auto && App.pages.length > before) openScan(App.pages[before].id);
       else if (App.view === 'home') renderHome();
       needFiles(App.view);      // ยกเลิกกล่องเลือกไฟล์ = กลับมาโชว์ใหม่ ไม่ปล่อยให้ค้างในเครื่องมือเปล่า
+      if (App.view === 'wm') wmDraw();   // เพิ่งมีหน้าแรกระหว่างอยู่ในเครื่องมือลายน้ำ — รีเฟรชพรีวิว
     });
   });
   imp('inCam', addImageFiles);
@@ -138,6 +172,8 @@ function boot(){
     Scan.bm = null;
     busy(false);
     renderGrid(); showView('pages');
+    offerNextStep('บันทึกหน้านี้แล้ว', 'ทำอะไรต่อดี?', null,
+      '<button class="btn primary" data-ns-action="scanMore">ถ่าย/เลือกเอกสารเพิ่ม</button>');
   };
   wireCropDrag();
 
@@ -155,14 +191,20 @@ function boot(){
     } else if (WM.kind === 'text'){
       $('wmOpa').value = 18; $('wmRot').value = 35; $('wmSize').value = 70;
     }
+    wmDraw();
   });
+  $('wmText').addEventListener('input', wmDraw);
   $('wmStampBox').addEventListener('click', e => {
     const b = e.target.closest('[data-preset]');
     if (!b) return;
     $('wmStampText').value = b.dataset.preset.split('|').join('\n');
+    wmDraw();
   });
-  segWire('wmLayout', b => { WM.layout = b.dataset.l; });
-  swatchWire('wmColorRow', c => { WM.color = c; });
+  $('wmStampText').addEventListener('input', wmDraw);
+  $('wmStrike').addEventListener('change', wmDraw);
+  segWire('wmLayout', b => { WM.layout = b.dataset.l; wmDraw(); });
+  swatchWire('wmColorRow', c => { WM.color = c; wmDraw(); });
+  ['wmSize', 'wmOpa', 'wmRot'].forEach(id => $(id).addEventListener('input', wmDraw));
   $('wmFile').addEventListener('change', async e => {
     const f = e.target.files[0]; e.target.value = '';
     if (!f) return;
@@ -173,9 +215,11 @@ function boot(){
     WM.imgUrl = cv.toDataURL('image/png');
     WM.imgRatio = cv.width / cv.height;
     $('wmImgPrev').innerHTML = '<img src="' + WM.imgUrl + '">';
+    wmDraw();
   });
   $('btnWmApply').onclick = applyWatermark;
-  $('btnWmClear').onclick = clearWatermark;
+  $('btnWmClear').onclick = () => { clearWatermark(); wmDraw(); };
+  wmDraw();
 
   /* ---------- signature ---------- */
   initSigPad();
@@ -203,6 +247,12 @@ function boot(){
   });
   phImp('phCam'); phImp('phFile');
   swatchWire('phBgRow', c => { Photo.bg = c; photoDraw(); });
+  $('phBgCustom').addEventListener('input', e => {
+    Photo.bg = e.target.value;
+    $('phBgRow').querySelectorAll('.sw').forEach(x => x.classList.remove('on'));
+    $('phBgCustomLbl').classList.add('on');
+    photoDraw();
+  });
   $('phCut').addEventListener('change', e => { Photo.cut = e.target.checked; photoDraw(); });
   const phSl = (id, key, f) => {
     let t = null;
@@ -232,7 +282,10 @@ function boot(){
   $('btnPhMake').onclick = photoMakePdf;
 
   /* ---------- ตัวเลือกหน้าในตัวเครื่องมือ ---------- */
-  ['wmScopeSeg', 'exScopeSeg', 'sigScopeSeg', 'rdScopeSeg'].forEach(id => segWire(id, () => renderPickers()));
+  ['wmScopeSeg', 'exScopeSeg', 'sigScopeSeg', 'rdScopeSeg'].forEach(id => segWire(id, () => {
+    renderPickers();
+    if (id === 'wmScopeSeg') wmDraw();
+  }));
   wirePickers();
   renderPickers();
 
@@ -283,8 +336,12 @@ function boot(){
   $('exHeader').addEventListener('input', e => { Ex.header = e.target.value; });
   $('btnExport').onclick = doExport;
 
+  busy(true, 'กำลังโหลดงานที่ค้างไว้…');
+  const restored = await loadWorkspace();
+  busy(false);
   renderGrid();
   renderHome();
+  if (restored) toast('กู้คืนงานที่ค้างไว้แล้ว');
 
   // ไม่ลง service worker ตอนรันบน localhost — ระหว่างพัฒนามันเสิร์ฟไฟล์เก่า
   // จาก cache ทำให้แก้โค้ดแล้วไม่เห็นผล (เปิดผ่าน IP/โดเมนจริงยังลงปกติ)

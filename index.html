@@ -55,36 +55,40 @@
       <div class="sec">เครื่องมือ</div>
       <div class="tools">
         <button class="tool-tile" data-tool="scan">
-          <span class="chip tint-cyan"><svg class="ic"><use href="#i-doc"/></svg></span>
+          <span class="chip tint-cyan"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg></span>
           <span class="t">สแกนเอกสาร</span>
         </button>
         <button class="tool-tile" data-tool="combine">
-          <span class="chip tint-blue"><svg class="ic"><use href="#i-combine"/></svg></span>
+          <span class="chip tint-blue"><svg class="ic" viewBox="0 0 24 24"><use href="#i-combine"/></svg></span>
           <span class="t">รวมไฟล์ PDF</span>
         </button>
         <button class="tool-tile" data-tool="wm">
-          <span class="chip tint-amber"><svg class="ic"><use href="#i-drop"/></svg></span>
+          <span class="chip tint-amber"><svg class="ic" viewBox="0 0 24 24"><use href="#i-drop"/></svg></span>
           <span class="t">ลายน้ำ</span>
         </button>
         <button class="tool-tile" data-tool="sign">
-          <span class="chip tint-violet"><svg class="ic"><use href="#i-pen"/></svg></span>
+          <span class="chip tint-violet"><svg class="ic" viewBox="0 0 24 24"><use href="#i-pen"/></svg></span>
           <span class="t">ลายเซ็น</span>
         </button>
-        <button class="tool-tile" data-tool="photo">
-          <span class="chip tint-red"><svg class="ic"><use href="#i-photo"/></svg></span>
-          <span class="t">รูปติดบัตร</span>
-        </button>
-        <button class="tool-tile" data-tool="idcard">
-          <span class="chip tint-blue"><svg class="ic"><use href="#i-card"/></svg></span>
-          <span class="t">สำเนาบัตร</span>
-        </button>
         <button class="tool-tile" data-tool="redact">
-          <span class="chip tint-violet"><svg class="ic"><use href="#i-eyeoff"/></svg></span>
+          <span class="chip tint-violet"><svg class="ic" viewBox="0 0 24 24"><use href="#i-eyeoff"/></svg></span>
           <span class="t">ปกปิดข้อมูล</span>
         </button>
         <button class="tool-tile" data-tool="export">
-          <span class="chip tint-green"><svg class="ic"><use href="#i-down"/></svg></span>
+          <span class="chip tint-green"><svg class="ic" viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
           <span class="t">ส่งออก PDF</span>
+        </button>
+      </div>
+
+      <div class="sec">เอกสารประจำตัว</div>
+      <div class="tools">
+        <button class="tool-tile" data-tool="photo">
+          <span class="chip tint-red"><svg class="ic" viewBox="0 0 24 24"><use href="#i-photo"/></svg></span>
+          <span class="t">รูปติดบัตร</span>
+        </button>
+        <button class="tool-tile" data-tool="idcard">
+          <span class="chip tint-blue"><svg class="ic" viewBox="0 0 24 24"><use href="#i-card"/></svg></span>
+          <span class="t">สำเนาบัตร</span>
         </button>
       </div>
 
@@ -94,6 +98,12 @@
       </div>
       <div class="list" id="recentList"></div>
       <p class="hint" id="recentHint">ยังไม่มีหน้าเอกสาร — เริ่มที่ “สแกนเอกสาร” หรือ “รวมไฟล์ PDF”</p>
+
+      <div class="sec sec-row">
+        <span>ไฟล์ที่เคยสร้าง</span>
+        <button class="lnk" id="lnkHistory">ดูทั้งหมด</button>
+      </div>
+      <p class="hint" style="margin-top:0">ไฟล์ทุกอันที่กด “สร้างไฟล์/ส่งออก” เสร็จ จะถูกเก็บไว้ให้โหลดซ้ำได้ที่นี่</p>
     </div>
   </section>
 
@@ -105,23 +115,24 @@
     </div>
     <div class="scroll">
       <div class="chips" style="margin-bottom:14px">
-        <label class="chip-btn"><input type="file" accept="image/*" capture="environment" multiple hidden id="inCam"><svg class="ic"><use href="#i-camera"/></svg>ถ่ายรูป</label>
-        <label class="chip-btn"><input type="file" accept="image/*" multiple hidden id="inImg"><svg class="ic"><use href="#i-image"/></svg>คลังรูป</label>
-        <label class="chip-btn"><input type="file" accept="application/pdf" multiple hidden id="inPdf"><svg class="ic"><use href="#i-doc"/></svg>PDF</label>
+        <label class="chip-btn"><input type="file" accept="image/*" capture="environment" multiple hidden id="inCam"><svg class="ic" viewBox="0 0 24 24"><use href="#i-camera"/></svg>ถ่ายรูป</label>
+        <label class="chip-btn"><input type="file" accept="image/*" multiple hidden id="inImg"><svg class="ic" viewBox="0 0 24 24"><use href="#i-image"/></svg>คลังรูป</label>
+        <label class="chip-btn"><input type="file" accept="application/pdf" multiple hidden id="inPdf"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>PDF</label>
+        <button class="chip-btn" id="btnPickHist"><svg class="ic" viewBox="0 0 24 24"><use href="#i-files"/></svg>จากไฟล์ที่เคยสร้าง</button>
       </div>
 
       <div class="chips" id="selBar" style="margin-bottom:14px">
-        <button class="chip-btn" id="btnSelAll"><svg class="ic"><use href="#i-check"/></svg>เลือกหมด</button>
-        <button class="chip-btn" id="btnSelNone"><svg class="ic"><use href="#i-square"/></svg>ล้าง</button>
+        <button class="chip-btn" id="btnSelAll"><svg class="ic" viewBox="0 0 24 24"><use href="#i-check"/></svg>เลือกหมด</button>
+        <button class="chip-btn" id="btnSelNone"><svg class="ic" viewBox="0 0 24 24"><use href="#i-square"/></svg>ล้าง</button>
         <span class="grow"></span>
-        <button class="chip-btn" id="btnRot"><svg class="ic"><use href="#i-rotate"/></svg>หมุน</button>
-        <button class="chip-btn danger" id="btnDel"><svg class="ic"><use href="#i-trash"/></svg>ลบ</button>
+        <button class="chip-btn" id="btnRot"><svg class="ic" viewBox="0 0 24 24"><use href="#i-rotate"/></svg>หมุน</button>
+        <button class="chip-btn danger" id="btnDel"><svg class="ic" viewBox="0 0 24 24"><use href="#i-trash"/></svg>ลบ</button>
       </div>
 
       <div id="grid" class="grid"></div>
 
       <div class="empty" id="emptyHint">
-        <div class="empty-ic"><svg class="ic"><use href="#i-doc"/></svg></div>
+        <div class="empty-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg></div>
         <p class="empty-t">ยังไม่มีเอกสาร</p>
         <p class="empty-s">ถ่ายรูป เลือกรูปในเครื่อง หรือเปิดไฟล์ PDF</p>
         <p class="empty-s">แตะเพื่อเลือก · แตะสองครั้งเพื่อแต่งภาพ · กดค้างแล้วลากเพื่อเรียงลำดับ</p>
@@ -132,7 +143,7 @@
   <!-- ================= SCAN ================= -->
   <section class="view" id="view-scan">
     <div class="flow-head">
-      <button class="back" data-back="pages"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button class="back" data-back="pages"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
       <h2>แต่งภาพเอกสาร</h2>
     </div>
     <div class="stage">
@@ -151,10 +162,10 @@
       <label class="sl"><span>สว่าง</span><input type="range" id="slBright" min="-60" max="60" value="0"></label>
       <label class="sl"><span>คอนทราสต์</span><input type="range" id="slContrast" min="-60" max="80" value="0"></label>
       <div class="chips">
-        <button class="chip-btn" id="btnCrop"><svg class="ic"><use href="#i-crop"/></svg>ตัดขอบ</button>
-        <button class="chip-btn" id="btnCropAuto"><svg class="ic"><use href="#i-magic"/></svg>อัตโนมัติ</button>
-        <button class="chip-btn" id="btnCropReset"><svg class="ic"><use href="#i-expand"/></svg>เต็มรูป</button>
-        <button class="chip-btn" id="btnScanRot"><svg class="ic"><use href="#i-rotate"/></svg>หมุน</button>
+        <button class="chip-btn" id="btnCrop"><svg class="ic" viewBox="0 0 24 24"><use href="#i-crop"/></svg>ตัดขอบ</button>
+        <button class="chip-btn" id="btnCropAuto"><svg class="ic" viewBox="0 0 24 24"><use href="#i-magic"/></svg>อัตโนมัติ</button>
+        <button class="chip-btn" id="btnCropReset"><svg class="ic" viewBox="0 0 24 24"><use href="#i-expand"/></svg>เต็มรูป</button>
+        <button class="chip-btn" id="btnScanRot"><svg class="ic" viewBox="0 0 24 24"><use href="#i-rotate"/></svg>หมุน</button>
       </div>
       <button class="btn primary" id="btnScanDone">เสร็จ</button>
     </div>
@@ -163,10 +174,13 @@
   <!-- ================= WATERMARK ================= -->
   <section class="view" id="view-wm">
     <div class="flow-head">
-      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button class="back" data-back="home"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
       <h2>ใส่ลายน้ำ</h2>
     </div>
     <div class="scroll">
+      <div class="stage" style="padding:4px 0 14px">
+        <div class="canvas-host" id="wmHost"><canvas id="wmCv"></canvas></div>
+      </div>
       <div class="box">
         <div class="seg" id="wmKind">
           <button data-k="text" class="on">ลายน้ำจาง</button>
@@ -188,7 +202,7 @@
         </div>
         <div id="wmImgBox" style="display:none">
           <label class="pick"><input type="file" accept="image/*" hidden id="wmFile">
-            <svg class="ic"><use href="#i-upload"/></svg>เลือกรูปลายน้ำ</label>
+            <svg class="ic" viewBox="0 0 24 24"><use href="#i-upload"/></svg>เลือกรูปลายน้ำ</label>
           <div id="wmImgPrev" class="wm-prev"></div>
         </div>
       </div>
@@ -231,15 +245,15 @@
   <!-- ================= SIGNATURE ================= -->
   <section class="view" id="view-sign">
     <div class="flow-head">
-      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button class="back" data-back="home"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
       <h2>ลายเซ็น</h2>
     </div>
     <div class="scroll">
       <div class="box">
         <canvas id="sigPad"></canvas>
         <div class="chips">
-          <button class="chip-btn" id="btnSigClear"><svg class="ic"><use href="#i-x"/></svg>ล้าง</button>
-          <label class="chip-btn"><svg class="ic"><use href="#i-upload"/></svg>อัปโหลดรูป
+          <button class="chip-btn" id="btnSigClear"><svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg>ล้าง</button>
+          <label class="chip-btn"><svg class="ic" viewBox="0 0 24 24"><use href="#i-upload"/></svg>อัปโหลดรูป
             <input type="file" accept="image/*" hidden id="sigFile"></label>
           <span class="grow"></span>
           <button class="btn accent sm" id="btnSigSave">บันทึก</button>
@@ -268,20 +282,24 @@
   <!-- ================= PLACE SIGNATURE ================= -->
   <section class="view" id="view-place">
     <div class="flow-head">
-      <button class="back" id="placeBack" data-back="sign"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button class="back" id="placeBack" data-back="sign"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
       <h2 id="placeTitle">วางลายเซ็น</h2>
     </div>
     <div class="stage">
       <div class="canvas-host" id="placeHost">
         <canvas id="placeCv"></canvas>
-        <div id="placeBox" class="obox"><div class="handle br"></div></div>
+        <div id="placeBox" class="obox">
+          <div class="rot-stem"></div>
+          <div class="handle rot" title="ลากเพื่อหมุน"><svg class="ic" viewBox="0 0 24 24"><use href="#i-rotate"/></svg></div>
+          <div class="handle br" title="ลากเพื่อย่อ-ขยาย"></div>
+        </div>
       </div>
     </div>
     <div class="sheet">
       <div class="pager">
-        <button class="chip-btn round" id="btnPlacePrev"><svg class="ic"><use href="#i-left"/></svg></button>
+        <button class="chip-btn round" id="btnPlacePrev"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
         <span id="placeLbl"></span>
-        <button class="chip-btn round" id="btnPlaceNext"><svg class="ic"><use href="#i-right"/></svg></button>
+        <button class="chip-btn round" id="btnPlaceNext"><svg class="ic" viewBox="0 0 24 24"><use href="#i-right"/></svg></button>
       </div>
       <div class="two">
         <button class="btn ghost danger" id="btnPlaceDel">ลบลายเซ็น</button>
@@ -293,17 +311,18 @@
   <!-- ================= PHOTO ID ================= -->
   <section class="view" id="view-photo">
     <div class="flow-head">
-      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button class="back" data-back="home"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
       <h2>รูปติดบัตร</h2>
     </div>
     <div class="scroll">
       <div class="stage" style="padding:0 0 14px">
         <div class="canvas-host" id="phHost"><canvas id="phCv"></canvas></div>
       </div>
+      <p class="hint" style="text-align:center;margin-top:2px">ลากบนรูปเพื่อเลื่อนตำแหน่ง · ปรับระยะด้วยแถบ “ซูม” ด้านล่าง</p>
 
       <div class="chips">
-        <label class="chip-btn"><input type="file" accept="image/*" capture="user" hidden id="phCam"><svg class="ic"><use href="#i-camera"/></svg>ถ่ายรูป</label>
-        <label class="chip-btn"><input type="file" accept="image/*" hidden id="phFile"><svg class="ic"><use href="#i-image"/></svg>เลือกรูป</label>
+        <label class="chip-btn"><input type="file" accept="image/*" capture="user" hidden id="phCam"><svg class="ic" viewBox="0 0 24 24"><use href="#i-camera"/></svg>ถ่ายรูป</label>
+        <label class="chip-btn"><input type="file" accept="image/*" hidden id="phFile"><svg class="ic" viewBox="0 0 24 24"><use href="#i-image"/></svg>เลือกรูป</label>
       </div>
 
       <div class="sec">พื้นหลัง</div>
@@ -314,6 +333,9 @@
           <button class="sw" data-c="#c62828" style="background:#c62828"></button>
           <button class="sw" data-c="#d9dee6" style="background:#d9dee6"></button>
           <button class="sw" data-c="" style="background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/12px 12px"></button>
+          <label class="sw custom" id="phBgCustomLbl" title="เลือกสีเอง">
+            <input type="color" id="phBgCustom" value="#ffffff">
+          </label>
         </div>
         <label class="switch"><span>เปลี่ยนพื้นหลังให้อัตโนมัติ</span><input type="checkbox" id="phCut" checked><i></i></label>
         <label class="sl"><span>ความไว</span><input type="range" id="phTol" min="6" max="80" value="30"></label>
@@ -345,22 +367,22 @@
   <!-- ================= ID CARD ================= -->
   <section class="view" id="view-idcard">
     <div class="flow-head">
-      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button class="back" data-back="home"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
       <h2>สำเนาบัตร หน้า-หลัง</h2>
     </div>
     <div class="scroll">
       <div class="stage" style="padding:0 0 12px"><div class="canvas-host"><canvas id="idCv"></canvas></div></div>
       <div class="chips">
-        <label class="chip-btn"><input type="file" accept="image/*" capture="environment" hidden id="idFrontCam"><svg class="ic"><use href="#i-camera"/></svg>ถ่ายด้านหน้า</label>
-        <label class="chip-btn"><input type="file" accept="image/*" capture="environment" hidden id="idBackCam"><svg class="ic"><use href="#i-camera"/></svg>ถ่ายด้านหลัง</label>
+        <label class="chip-btn"><input type="file" accept="image/*" capture="environment" hidden id="idFrontCam"><svg class="ic" viewBox="0 0 24 24"><use href="#i-camera"/></svg>ถ่ายด้านหน้า</label>
+        <label class="chip-btn"><input type="file" accept="image/*" capture="environment" hidden id="idBackCam"><svg class="ic" viewBox="0 0 24 24"><use href="#i-camera"/></svg>ถ่ายด้านหลัง</label>
       </div>
       <div class="chips">
-        <label class="chip-btn"><input type="file" accept="image/*" hidden id="idFrontFile"><svg class="ic"><use href="#i-image"/></svg>เลือกรูปหน้า</label>
-        <label class="chip-btn"><input type="file" accept="image/*" hidden id="idBackFile"><svg class="ic"><use href="#i-image"/></svg>เลือกรูปหลัง</label>
+        <label class="chip-btn"><input type="file" accept="image/*" hidden id="idFrontFile"><svg class="ic" viewBox="0 0 24 24"><use href="#i-image"/></svg>เลือกรูปหน้า</label>
+        <label class="chip-btn"><input type="file" accept="image/*" hidden id="idBackFile"><svg class="ic" viewBox="0 0 24 24"><use href="#i-image"/></svg>เลือกรูปหลัง</label>
       </div>
       <div class="chips">
-        <button class="chip-btn" id="btnIdCropF" disabled><svg class="ic"><use href="#i-crop"/></svg>ปรับขอบหน้า</button>
-        <button class="chip-btn" id="btnIdCropB" disabled><svg class="ic"><use href="#i-crop"/></svg>ปรับขอบหลัง</button>
+        <button class="chip-btn" id="btnIdCropF" disabled><svg class="ic" viewBox="0 0 24 24"><use href="#i-crop"/></svg>ปรับขอบหน้า</button>
+        <button class="chip-btn" id="btnIdCropB" disabled><svg class="ic" viewBox="0 0 24 24"><use href="#i-crop"/></svg>ปรับขอบหลัง</button>
       </div>
 
       <div class="sec">ข้อความคร่อมสำเนา</div>
@@ -395,7 +417,7 @@
   <!-- ================= ปรับขอบบัตร ================= -->
   <section class="view" id="view-idcrop">
     <div class="flow-head">
-      <button class="back" data-back="idcard"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button class="back" data-back="idcard"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
       <h2 id="idCropTitle">ปรับขอบบัตร</h2>
     </div>
     <div class="stage">
@@ -407,8 +429,8 @@
     <div class="sheet">
       <p class="hint" style="margin:0">ลากวงกลม 4 มุมให้ทาบขอบบัตรพอดี ระบบจะดัดให้ตรงเอง</p>
       <div class="chips">
-        <button class="chip-btn" id="btnIdAuto"><svg class="ic"><use href="#i-magic"/></svg>หาขอบอัตโนมัติ</button>
-        <button class="chip-btn" id="btnIdFull"><svg class="ic"><use href="#i-expand"/></svg>เต็มรูป</button>
+        <button class="chip-btn" id="btnIdAuto"><svg class="ic" viewBox="0 0 24 24"><use href="#i-magic"/></svg>หาขอบอัตโนมัติ</button>
+        <button class="chip-btn" id="btnIdFull"><svg class="ic" viewBox="0 0 24 24"><use href="#i-expand"/></svg>เต็มรูป</button>
       </div>
       <button class="btn primary" id="btnIdCropDone">เสร็จ</button>
     </div>
@@ -417,7 +439,7 @@
   <!-- ================= REDACT ================= -->
   <section class="view" id="view-redactPick">
     <div class="flow-head">
-      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button class="back" data-back="home"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
       <h2>ปกปิดข้อมูล</h2>
     </div>
     <div class="scroll">
@@ -436,21 +458,21 @@
 
   <section class="view" id="view-redact">
     <div class="flow-head">
-      <button class="back" data-back="redactPick"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button class="back" data-back="redactPick"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
       <h2>ขีดดำทับข้อมูล</h2>
     </div>
     <div class="stage"><div class="canvas-host"><canvas id="rdCv"></canvas></div></div>
     <div class="sheet">
       <div class="pager">
-        <button class="chip-btn round" id="btnRdPrev"><svg class="ic"><use href="#i-left"/></svg></button>
+        <button class="chip-btn round" id="btnRdPrev"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
         <span id="rdLbl"></span>
-        <button class="chip-btn round" id="btnRdNext"><svg class="ic"><use href="#i-right"/></svg></button>
+        <button class="chip-btn round" id="btnRdNext"><svg class="ic" viewBox="0 0 24 24"><use href="#i-right"/></svg></button>
       </div>
       <div class="chips">
         <span id="rdCount" style="font-size:12.5px;color:var(--muted)"></span>
         <span class="grow"></span>
-        <button class="chip-btn" id="rdFlat"><svg class="ic"><use href="#i-image"/></svg>แปลงเป็นรูป</button>
-        <button class="chip-btn danger" id="btnRdDel"><svg class="ic"><use href="#i-trash"/></svg>ลบกล่อง</button>
+        <button class="chip-btn" id="rdFlat"><svg class="ic" viewBox="0 0 24 24"><use href="#i-image"/></svg>แปลงเป็นรูป</button>
+        <button class="chip-btn danger" id="btnRdDel"><svg class="ic" viewBox="0 0 24 24"><use href="#i-trash"/></svg>ลบกล่อง</button>
       </div>
       <button class="btn primary" id="btnRdDone">เสร็จ</button>
     </div>
@@ -459,7 +481,7 @@
   <!-- ================= EXPORT ================= -->
   <section class="view" id="view-export">
     <div class="flow-head">
-      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <button class="back" data-back="home"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
       <h2>ส่งออก PDF</h2>
     </div>
     <div class="scroll">
@@ -516,10 +538,30 @@
     </div>
   </section>
 
+  <!-- ================= HISTORY ================= -->
+  <section class="view" id="view-history">
+    <div class="flow-head">
+      <button class="back" data-back="home"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
+      <h2>ไฟล์ที่เคยสร้าง</h2>
+    </div>
+    <div class="scroll">
+      <p class="hint" id="histSummary" style="margin-top:0"></p>
+      <div class="list" id="histList"></div>
+      <div class="empty" id="histEmpty" style="display:none">
+        <div class="empty-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-files"/></svg></div>
+        <p class="empty-t">ยังไม่มีไฟล์ในประวัติ</p>
+        <p class="empty-s">ทุกครั้งที่สร้างไฟล์เสร็จ จะถูกเก็บไว้ที่นี่ให้โหลดซ้ำได้ (เก็บล่าสุด 30 ไฟล์)</p>
+      </div>
+      <button class="chip-btn danger" id="btnHistClearAll" style="margin-top:14px">
+        <svg class="ic" viewBox="0 0 24 24"><use href="#i-trash"/></svg>ลบประวัติทั้งหมด
+      </button>
+    </div>
+  </section>
+
   <!-- ================= DONE ================= -->
   <section class="view" id="view-done">
     <div class="done-wrap">
-      <div class="done-ic"><svg class="ic"><use href="#i-check"/></svg></div>
+      <div class="done-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
       <div>
         <div class="done-t" id="doneT">สร้างไฟล์สำเร็จ</div>
         <div class="done-s" id="doneS">ไฟล์พร้อมบันทึกลงเครื่องหรือส่งต่อแล้ว</div>
@@ -536,22 +578,46 @@
 </main>
 
 <nav id="tabs">
-  <button data-v="home" class="on"><svg class="ic"><use href="#i-home"/></svg>หน้าแรก</button>
-  <button data-v="pages"><svg class="ic"><use href="#i-files"/></svg>เอกสาร</button>
+  <button data-v="home" class="on"><svg class="ic" viewBox="0 0 24 24"><use href="#i-home"/></svg>หน้าแรก</button>
+  <button data-v="pages"><svg class="ic" viewBox="0 0 24 24"><use href="#i-files"/></svg>เอกสาร</button>
 </nav>
 
 <!-- ขั้น "เลือกไฟล์" — ขึ้นทับเมื่อเปิดเครื่องมือที่ต้องมีหน้าเอกสารก่อน -->
 <div id="needFiles">
   <div class="nf-card">
-    <div class="empty-ic"><svg class="ic"><use href="#i-doc"/></svg></div>
-    <div class="nf-t">ยังไม่มีเอกสารให้ทำงานด้วย</div>
+    <div class="empty-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg></div>
+    <div class="nf-t" id="nfTitle">ยังไม่มีเอกสารให้ทำงานด้วย</div>
     <div class="nf-s" id="nfWhat">เลือกไฟล์ที่จะใส่ลายน้ำก่อน</div>
     <div class="nf-btns">
       <button class="btn primary" data-nf="cam">ถ่ายรูปเอกสาร</button>
       <button class="btn ghost" data-nf="img">เลือกรูปในเครื่อง</button>
       <button class="btn ghost" data-nf="pdf">เปิดไฟล์ PDF</button>
+      <button class="btn ghost" data-nf="hist">เลือกจากไฟล์ที่เคยสร้าง</button>
       <button class="btn ghost" data-nf="close">ยกเลิก</button>
     </div>
+  </div>
+</div>
+
+<!-- เลือกไฟล์จากประวัติมาเพิ่มเป็นหน้าเอกสาร (ใช้ตอน "รวมไฟล์ PDF" หรือเปิดไฟล์อื่นที่เคยสร้าง) -->
+<div id="histPicker">
+  <div class="nf-card">
+    <div class="nf-t">เลือกจากไฟล์ที่เคยสร้าง</div>
+    <div class="nf-s">เลือกได้หลายไฟล์ — จะถูกเพิ่มเป็นหน้าเอกสารต่อท้ายของเดิม</div>
+    <div class="list" id="histPickList" style="max-height:44vh;overflow:auto;margin-bottom:14px;text-align:left"></div>
+    <div class="nf-btns">
+      <button class="btn primary" id="btnHistPickAdd" disabled>เพิ่มไฟล์ที่เลือก</button>
+      <button class="btn ghost" data-hp="close">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- หลังทำเครื่องมือหนึ่งเสร็จ — ถามต่อว่าจะไปเครื่องมือไหนต่อ กันงงว่าทำต่อเนื่องยังไง -->
+<div id="nextStep">
+  <div class="nf-card">
+    <div class="empty-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
+    <div class="nf-t" id="nsTitle">เสร็จแล้ว</div>
+    <div class="nf-s" id="nsSub">ทำอะไรต่อดี?</div>
+    <div class="nf-btns" id="nsBtns"></div>
   </div>
 </div>
 
@@ -568,6 +634,8 @@
 <script src="js/idcard.js"></script>
 <script src="js/redact.js"></script>
 <script src="js/export.js"></script>
+<script src="js/history.js"></script>
+<script src="js/persist.js"></script>
 <script src="js/boot.js"></script>
 </body>
 </html>

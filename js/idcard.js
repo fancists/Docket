@@ -17,7 +17,7 @@ const IdCard = {
 /* ตัดบัตรออกจากรูปถ่าย: หาขอบ -> ดัด perspective -> ปรับให้อ่านง่าย */
 async function cardFromFile(file){
   const bm = await blobToBitmap(file);
-  const sc = Math.min(1, 2200 / Math.max(bm.width, bm.height));
+  const sc = Math.min(1, 2800 / Math.max(bm.width, bm.height));
   let cv = mkCanvas(bm.width * sc, bm.height * sc);
   cv.getContext('2d').drawImage(bm, 0, 0, cv.width, cv.height);
   if (bm.close) bm.close();
@@ -46,7 +46,7 @@ async function renderCard(srcCv, corners){
   const pts = corners.map(([x, y]) => [x * srcCv.width, y * srcCv.height]);
   const cv = warpQuad(srcCv, pts, W, H);
   applyFilter(cv, { mode: 'mag', bright: 0, contrast: 0 });
-  return { blob: await canvasToBlob(cv, 'image/jpeg', 0.92), canvas: cv };
+  return { blob: await canvasToBlob(cv, 'image/jpeg', 0.96), canvas: cv };
 }
 
 /* ---------- หาขอบบัตร ----------
@@ -115,20 +115,25 @@ function quadFromBorderFlood(cv, tol){
     if (y < h - 1) push(j + w);
   }
 
-  let tl = null, tr = null, br = null, bl = null;
-  let minS = 1e9, maxS = -1e9, minD = 1e9, maxD = -1e9, cnt = 0;
+  // เดิมเคยหามุมจากพิกเซลสุดขั้วตามแนวทแยง (x+y / x-y) จุดเดียว — โดนเงา/แสง
+  // สะท้อนที่หลุดออกนอกตัวบัตรเบี่ยงมุมง่าย โดยเฉพาะตอนถ่ายเอียง จึงเปลี่ยนมาใช้
+  // ฮัลนูน + สี่เหลี่ยมพื้นที่น้อยสุด (rotating calipers) ซึ่งทนพิกเซลรบกวนกว่ามาก
+  let cnt = 0;
+  const pts = [];
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++){
       if (bgMask[y * w + x]) continue;
       cnt++;
-      const S1 = x + y, D1 = x - y;
-      if (S1 < minS){ minS = S1; tl = [x, y]; }
-      if (S1 > maxS){ maxS = S1; br = [x, y]; }
-      if (D1 > maxD){ maxD = D1; tr = [x, y]; }
-      if (D1 < minD){ minD = D1; bl = [x, y]; }
+      pts.push([x, y]);
     }
-  if (!tl || cnt < w * h * 0.02) return null;
-  return [tl, tr, br, bl].map(([x, y]) => [x / w, y / h]);
+  if (cnt < w * h * 0.02) return null;
+  const hull = convexHull(pts);
+  const rect = minAreaRect(hull);
+  if (!rect) return null;
+  return orderQuadTLFirst(rect).map(([x, y]) => [
+    Math.max(0, Math.min(1, x / w)),
+    Math.max(0, Math.min(1, y / h))
+  ]);
 }
 
 async function idLoad(side, file){
@@ -142,12 +147,27 @@ async function idLoad(side, file){
   busy(false);
 }
 
-/* โหลด PNG ตราคร่อมแบบ cache ไว้ ไม่ต้องสร้างใหม่ทุกเฟรม */
+/* โหลด PNG ตราคร่อมแบบ cache ไว้ ไม่ต้องสร้างใหม่ทุกเฟรม
+   ต้องรอฟอนต์ Sarabun โหลดเสร็จก่อนวาดครั้งแรก — ถ้าวาดตอนฟอนต์ยังไม่มา
+   เบราว์เซอร์จะสลับไปใช้ฟอนต์สำรองที่วางสระ/วรรณยุกต์ไทยผิด แล้วอันนั้นจะ
+   ค้างอยู่ใน cache ตลอด (key เดิมไม่เปลี่ยนจนกว่าจะแก้ข้อความ) ดูเหมือนตัวอักษรขาดๆ */
 let _stampCache = { key: null, img: null, ratio: 1 };
-function stampImage(){
+let _fontsReady = false;
+if (document.fonts && document.fonts.ready){
+  document.fonts.ready.then(() => {
+    _fontsReady = true;
+    _stampCache = { key: null, img: null, ratio: 1 };   // ล้างของเก่าที่อาจวาดด้วยฟอนต์สำรองไปแล้ว
+    if (typeof idDraw === 'function' && App.view === 'idcard') idDraw();
+    if (typeof wmDraw === 'function' && App.view === 'wm') wmDraw();
+  }).catch(() => {});
+}
+async function stampImage(){
   const lines = IdCard.lines.filter(Boolean);
   const key = lines.join('|') + '|' + IdCard.color + '|' + IdCard.strike;
-  if (_stampCache.key === key) return Promise.resolve(_stampCache);
+  if (_stampCache.key === key) return _stampCache;
+  if (document.fonts && document.fonts.load && !_fontsReady){
+    try { await document.fonts.load('700 96px Sarabun'); } catch(e){}
+  }
   const st = makeStampPng(lines, IdCard.color, IdCard.strike);
   return new Promise(res => {
     const im = new Image();
@@ -155,6 +175,16 @@ function stampImage(){
     im.onerror = () => res({ key, img: null, ratio: 1 });
     im.src = st.dataUrl;
   });
+}
+
+/* กล่องตราคร่อม — ตั้งใจให้ "คร่อม" ทับรอยต่อจริง ไม่ใช่ลอยอยู่ในช่องว่างระหว่างบัตร
+   (คร่อมแบบนี้เป็นธรรมเนียมรับรองสำเนา: ตัดแยกหน้า/หลังออกจากกันไม่ได้โดยไม่ให้ตราขาด) */
+function stampBox(L, p, st){
+  let h = L.gap * 1.35;                 // สูงกว่าช่องว่างเสมอ = คาบเข้าไปในบัตรทั้งสองด้านแน่นอน
+  let w = h * (st.ratio || 1);
+  const maxW = p.w * 0.92;
+  if (w > maxW){ w = maxW; h = w / (st.ratio || 1); }
+  return { w, h, cx: p.w / 2, cy: (L.y1 + L.ch + L.y2) / 2 };
 }
 
 /* พรีวิวแผ่นกระดาษ */
@@ -196,9 +226,9 @@ async function idDraw(){
     const tok = ++_idDrawToken;
     const st = await stampImage();
     if (tok !== _idDrawToken || !st.img) return;      // มีการวาดรอบใหม่แล้ว ทิ้งอันนี้
-    const w = L.cw * 0.95 * px, h = w / st.ratio;
+    const sb = stampBox(L, p, st);
     ctx.globalAlpha = 0.92;
-    ctx.drawImage(st.img, (W - w) / 2, ((L.y1 + L.ch + L.y2) / 2) * px - h / 2, w, h);
+    ctx.drawImage(st.img, (sb.cx - sb.w / 2) * px, (sb.cy - sb.h / 2) * px, sb.w * px, sb.h * px);
     ctx.globalAlpha = 1;
   }
 }
@@ -230,17 +260,23 @@ async function idMakePdf(){
                             width: L.cw * MM, height: L.ch * MM });
     }
     if (IdCard.stamp){
+      if (document.fonts && document.fonts.load){
+        try { await document.fonts.load('700 96px Sarabun'); } catch(e){}
+      }
       const st = makeStampPng(IdCard.lines.filter(Boolean), IdCard.color, IdCard.strike);
       const b = await (await fetch(st.dataUrl)).arrayBuffer();
       const im = await doc.embedPng(new Uint8Array(b));
-      const w = L.cw * 0.95 * MM, h = w / st.ratio;
-      const cy = (p.h - (L.y1 + L.ch + L.y2) / 2) * MM;
-      page.drawImage(im, { x: (p.w * MM - w) / 2, y: cy - h / 2, width: w, height: h, opacity: 0.92 });
+      const sb = stampBox(L, p, st);
+      page.drawImage(im, {
+        x: (sb.cx - sb.w / 2) * MM, y: (p.h - sb.cy - sb.h / 2) * MM,
+        width: sb.w * MM, height: sb.h * MM, opacity: 0.92
+      });
     }
     const bytes = await doc.save({ useObjectStreams: true });
     showDone(new Blob([bytes], { type: 'application/pdf' }), 'สำเนาบัตร.pdf', {
       title: 'สำเนาบัตรพร้อมปริ๊น',
-      sub: 'บัตรขนาดเท่าของจริงบนกระดาษ ' + p.label + ' — สั่งพิมพ์แบบ “ขนาดจริง 100%”'
+      sub: 'บัตรขนาดเท่าของจริงบนกระดาษ ' + p.label + ' — สั่งพิมพ์แบบ “ขนาดจริง 100%”',
+      continueTo: 'wm'
     });
   } catch(e){ console.error(e); toast('สร้างไฟล์ไม่สำเร็จ: ' + e.message, 4000); }
   busy(false);

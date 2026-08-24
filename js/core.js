@@ -22,7 +22,7 @@ const App = {
   view: 'pages'
 };
 
-const MAXDIM = 2400;   // downscale imported photos (memory guard on phones)
+const MAXDIM = 3200;   // downscale imported photos (memory guard on phones)
 const THUMB = 260;
 
 /* ---------- tiny helpers ---------- */
@@ -46,7 +46,7 @@ const nextFrame = () => new Promise(r => setTimeout(r, 0));
 
 /* หน้าที่เป็น "flow" ซ่อนแท็บล่างและมีปุ่มย้อนกลับของตัวเอง (ตาม design draft) */
 const FLOW_VIEWS = new Set(['scan', 'wm', 'sign', 'place', 'photo', 'idcard', 'idcrop',
-                            'redactPick', 'redact', 'export', 'done']);
+                            'redactPick', 'redact', 'export', 'done', 'history']);
 
 /* เครื่องมือที่ทำงานกับหน้าเอกสาร — เปิดตอนยังไม่มีไฟล์ = ตายอยู่ตรงนั้น
    จึงคั่นด้วยขั้น "เลือกไฟล์" ให้นำเข้าได้จากในเครื่องมือเลย */
@@ -59,7 +59,7 @@ const NEEDS_PAGES = {
 function needFiles(v){
   const why = NEEDS_PAGES[v];
   const show = !!why && App.pages.length === 0;
-  if (show) $('nfWhat').textContent = why;
+  if (show){ $('nfTitle').textContent = 'ยังไม่มีเอกสารให้ทำงานด้วย'; $('nfWhat').textContent = why; }
   $('needFiles').classList.toggle('on', show);
   return show;
 }
@@ -72,6 +72,8 @@ function showView(v){
   document.body.classList.toggle('flow', FLOW_VIEWS.has(v));
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
   if (v === 'sign' && typeof Sig !== 'undefined' && Sig.fit) Sig.fit();
+  if (v === 'wm' && typeof wmDraw === 'function') wmDraw();
+  if (v === 'history' && typeof renderHistory === 'function') renderHistory();
   if (v === 'home') renderHome();
   renderPickers();
   needFiles(v);
@@ -102,8 +104,89 @@ function renderHome(){
   }).join('');
   updateHeader();
 }
+/* ---------- "ทำอะไรต่อดี?" — โผล่หลังใส่ลายน้ำ/ลายเซ็น/ปกปิดข้อมูลเสร็จ
+   กันงงว่าจะไปเครื่องมือถัดไปยังไง (ต้องกลับหน้าแรกเองทุกรอบ) ---------- */
+const NEXT_STEP_TOOLS = [
+  { v: 'wm', label: 'ใส่ลายน้ำ' },
+  { v: 'sign', label: 'ลายเซ็น' },
+  { v: 'redactPick', label: 'ปกปิดข้อมูล' },
+  { v: 'export', label: 'ส่งออก PDF' }
+];
+function offerNextStep(title, sub, excludeView, extraBtnHtml){
+  $('nsTitle').textContent = title;
+  $('nsSub').textContent = sub;
+  $('nsBtns').innerHTML = (extraBtnHtml || '') + NEXT_STEP_TOOLS
+    .filter(t => t.v !== excludeView)
+    .map((t, i) => '<button class="btn ' + (i === 0 && !extraBtnHtml ? 'primary' : 'ghost') + '" data-ns="' + t.v + '">' + t.label + '</button>').join('')
+    + '<button class="btn ghost" data-ns="stay">อยู่ตรงนี้ต่อ</button>';
+  $('nextStep').classList.add('on');
+}
+
 function escHtml(s){
   return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+/* ---------- geometry: convex hull + minimum-area bounding rectangle ----------
+   ใช้หามุมสี่เหลี่ยม (บัตร/เอกสาร) จากกลุ่มพิกเซล — แม่นกว่าวิธีหาจุดสุดขั้วตาม
+   แนวทแยงเดิม (เอาพิกเซลเดียวที่ x+y / x-y มากสุด) ซึ่งโดนจุดรบกวนเบี่ยงง่าย
+   โดยเฉพาะตอนถ่ายเอียง ขอบเงา/แสงสะท้อนทำให้พิกเซลปลายทางกระโดดออกนอกตัวบัตรจริง */
+function convexHull(points){
+  const pts = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const n = pts.length;
+  if (n < 3) return pts;
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower = [];
+  for (const p of pts){
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper = [];
+  for (let i = n - 1; i >= 0; i--){
+    const p = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  lower.pop(); upper.pop();
+  return lower.concat(upper);
+}
+
+/* rotating calipers: สี่เหลี่ยมพื้นที่น้อยสุดที่ครอบฮัลทั้งหมด รองรับทุกมุมเอียง */
+function minAreaRect(hull){
+  if (hull.length < 3) return null;
+  let best = null;
+  for (let i = 0; i < hull.length; i++){
+    const p1 = hull[i], p2 = hull[(i + 1) % hull.length];
+    const len = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]) || 1;
+    const ux = (p2[0] - p1[0]) / len, uy = (p2[1] - p1[1]) / len;
+    const vx = -uy, vy = ux;
+    let minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+    for (const [x, y] of hull){
+      const u = x * ux + y * uy, v = x * vx + y * vy;
+      if (u < minU) minU = u; if (u > maxU) maxU = u;
+      if (v < minV) minV = v; if (v > maxV) maxV = v;
+    }
+    const area = (maxU - minU) * (maxV - minV);
+    if (!best || area < best.area){
+      best = { area, corners: [
+        [minU * ux + minV * vx, minU * uy + minV * vy],
+        [maxU * ux + minV * vx, maxU * uy + minV * vy],
+        [maxU * ux + maxV * vx, maxU * uy + maxV * vy],
+        [minU * ux + maxV * vx, minU * uy + maxV * vy]
+      ] };
+    }
+  }
+  return best.corners;
+}
+
+/* จัดลำดับมุมสี่เหลี่ยมให้เป็น TL,TR,BR,BL เสมอ ไม่ว่า minAreaRect จะคืนมาเริ่มจากมุมไหน/วนทางไหน */
+function orderQuadTLFirst(corners){
+  let si = 0, best = Infinity;
+  corners.forEach(([x, y], i) => { const s = x + y; if (s < best){ best = s; si = i; } });
+  const n = corners.length;
+  const fwd = [0, 1, 2, 3].map(k => corners[(si + k) % n]);
+  const bwd = [0, 1, 2, 3].map(k => corners[(si - k + n) % n]);
+  // มุมถัดจาก TL ควรเป็น TR (x-y มากสุด) — เทียบสองทิศแล้วเลือกทางที่ใช่
+  return (fwd[1][0] - fwd[1][1]) >= (bwd[1][0] - bwd[1][1]) ? fwd : bwd;
 }
 
 /* ---------- canvas utils ---------- */
@@ -143,7 +226,7 @@ async function addImageFiles(files){
       const cv = mkCanvas(bm.width * sc, bm.height * sc);
       cv.getContext('2d').drawImage(bm, 0, 0, cv.width, cv.height);
       if (bm.close) bm.close();
-      const blob = await canvasToBlob(cv, 'image/jpeg', 0.92);
+      const blob = await canvasToBlob(cv, 'image/jpeg', 0.95);
       const p = {
         id: uid(), kind: 'img', name: f.name || 'รูป', rotate: 0, overlays: [],
         img: { blob, w: cv.width, h: cv.height,
@@ -259,7 +342,7 @@ function renderGrid(){
     const d = document.createElement('div');
     d.className = 'card' + (App.sel.has(p.id) ? ' sel' : '');
     d.dataset.id = p.id;
-    const mk = n => '<b><svg class="ic"><use href="#i-' + n + '"/></svg></b>';
+    const mk = n => '<b><svg class="ic" viewBox="0 0 24 24"><use href="#i-' + n + '"/></svg></b>';
     const marks = [];
     if (p.overlays.some(o => o.kind === 'wm')) marks.push(mk('drop'));
     if (p.overlays.some(o => o.kind === 'sig')) marks.push(mk('pen'));
@@ -274,6 +357,7 @@ function renderGrid(){
   if (App.view === 'home') renderHome();
   renderPickers();
   attachGridGestures();
+  if (typeof saveWorkspaceSoon === 'function') saveWorkspaceSoon();
 }
 
 function toggleSel(id){
@@ -321,6 +405,7 @@ function wirePickers(){
       el.classList.toggle('on', App.sel.has(id));
       updateHeader();
       renderPickers(box);
+      if (App.view === 'wm' && typeof wmDraw === 'function') wmDraw();
     });
   });
 }

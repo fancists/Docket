@@ -142,5 +142,5 @@ async function redactDone(){
   busy(false);
   renderGrid();
   showView('pages');
-  toast('ปกปิดข้อมูลแล้ว');
+  offerNextStep('ปกปิดข้อมูลแล้ว', Redact.list.length + ' หน้า — ทำอะไรต่อดี?', 'redactPick');
 }
