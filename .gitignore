@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+desktop.ini
+Thumbs.db
+.DS_Store

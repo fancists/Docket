@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0d4a4f">
+<title>DocKit — จัดการเอกสาร</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<!-- ============ icon sprite ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="i-doc"><path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M15 3v5h5"/><path d="M8 13.5h8M8 17h5"/></g>
+  <g id="i-combine"><path d="M4 8h11a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><path d="M8 4h11a1 1 0 0 1 1 1v11"/></g>
+  <g id="i-drop"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></g>
+  <g id="i-pen"><path d="M3 20c3-8 4-8 6.5 0s5-13 8-6 1.5 6 3.5 6"/><path d="m17 5 2-2 2 2-2 2z"/></g>
+  <g id="i-photo"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><path d="M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></g>
+  <g id="i-files"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6z"/></g>
+  <g id="i-home"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-9z"/></g>
+  <g id="i-down"><path d="M12 3.5v12M7.4 11.2 12 15.8l4.6-4.6M4 20.5h16"/></g>
+  <g id="i-camera"><path d="M14.6 4.2H9.4L7.2 7H4.3A2.3 2.3 0 0 0 2 9.3v8.4A2.3 2.3 0 0 0 4.3 20h15.4a2.3 2.3 0 0 0 2.3-2.3V9.3A2.3 2.3 0 0 0 19.7 7h-2.9l-2.2-2.8Z"/><circle cx="12" cy="13" r="3.4"/></g>
+  <g id="i-image"><rect x="2.6" y="4.4" width="18.8" height="15.2" rx="2.6"/><circle cx="8.4" cy="9.6" r="1.5"/><path d="m3.6 17.6 4.9-4.9a1.6 1.6 0 0 1 2.2 0l3.3 3.3 1.8-1.8a1.6 1.6 0 0 1 2.2 0l2.4 2.4"/></g>
+  <g id="i-check"><path d="m4.5 12.6 4.8 4.8 10.2-10.8"/></g>
+  <g id="i-square"><rect x="4.4" y="4.4" width="15.2" height="15.2" rx="3.4"/></g>
+  <g id="i-rotate"><path d="M20.8 12a8.8 8.8 0 1 1-2.9-6.5"/><path d="M20.9 4.2v5.2h-5.2"/></g>
+  <g id="i-trash"><path d="M4.2 6.6h15.6M9.8 10.8v6.4M14.2 10.8v6.4"/><path d="m6.3 6.6.9 12.1a2 2 0 0 0 2 1.9h5.6a2 2 0 0 0 2-1.9l.9-12.1"/><path d="M9.4 6.6V5a1.8 1.8 0 0 1 1.8-1.8h1.6A1.8 1.8 0 0 1 14.6 5v1.6"/></g>
+  <g id="i-crop"><path d="M6.2 2.4v13.4a1.8 1.8 0 0 0 1.8 1.8h13.6"/><path d="M2.4 6.2h13.4a1.8 1.8 0 0 1 1.8 1.8v13.6"/></g>
+  <g id="i-magic"><path d="m12 3 1.6 4.2L17.8 9l-4.2 1.8L12 15l-1.6-4.2L6.2 9l4.2-1.8L12 3Z"/><path d="m18.6 15.4.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2Z"/></g>
+  <g id="i-expand"><path d="M8.6 3.2H3.2v5.4M15.4 3.2h5.4v5.4M8.6 20.8H3.2v-5.4M15.4 20.8h5.4v-5.4"/></g>
+  <g id="i-left"><path d="m14.4 5.6-6.4 6.4 6.4 6.4"/></g>
+  <g id="i-right"><path d="m9.6 5.6 6.4 6.4-6.4 6.4"/></g>
+  <g id="i-x"><path d="M6 6l12 12M18 6 6 18"/></g>
+  <g id="i-upload"><path d="M12 16.4V4.2M7.4 8.8 12 4.2l4.6 4.6M4 20.6h16"/></g>
+  <g id="i-share"><path d="M12 15.4V3.6M7.8 7.8 12 3.6l4.2 4.2"/><path d="M4.6 13.6v5.2a1.8 1.8 0 0 0 1.8 1.8h11.2a1.8 1.8 0 0 0 1.8-1.8v-5.2"/></g>
+  <g id="i-print"><path d="M6.5 9V3.5h11V9"/><path d="M6.5 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1.5"/><path d="M6.5 14.5h11v6h-11z"/></g>
+  <g id="i-plus"><path d="M12 5v14M5 12h14"/></g>
+  <g id="i-card"><rect x="2.6" y="5" width="18.8" height="14" rx="2.4"/><path d="M2.6 9.4h18.8M6 14.2h4M14 14.2h4"/></g>
+  <g id="i-eyeoff"><path d="M3 3l18 18"/><path d="M10.6 10.7a2 2 0 0 0 2.8 2.8"/><path d="M9.4 5.4A9.6 9.6 0 0 1 12 5c5 0 9 4.5 9 7 0 .9-.6 2.2-1.7 3.4M6.3 6.7C3.9 8.2 3 10.3 3 12c0 2.5 4 7 9 7 1.4 0 2.6-.3 3.7-.8"/></g>
+</defs></svg>
+
+<main id="main">
+
+  <!-- ================= HOME ================= -->
+  <section class="view active" id="view-home">
+    <div class="big-head">
+      <h1>DocKit</h1>
+      <div class="sub" id="homeSub">ยังไม่มีเอกสาร</div>
+    </div>
+    <div class="scroll">
+      <div class="sec">เครื่องมือ</div>
+      <div class="tools">
+        <button class="tool-tile" data-tool="scan">
+          <span class="chip tint-cyan"><svg class="ic"><use href="#i-doc"/></svg></span>
+          <span class="t">สแกนเอกสาร</span>
+        </button>
+        <button class="tool-tile" data-tool="combine">
+          <span class="chip tint-blue"><svg class="ic"><use href="#i-combine"/></svg></span>
+          <span class="t">รวมไฟล์ PDF</span>
+        </button>
+        <button class="tool-tile" data-tool="wm">
+          <span class="chip tint-amber"><svg class="ic"><use href="#i-drop"/></svg></span>
+          <span class="t">ลายน้ำ</span>
+        </button>
+        <button class="tool-tile" data-tool="sign">
+          <span class="chip tint-violet"><svg class="ic"><use href="#i-pen"/></svg></span>
+          <span class="t">ลายเซ็น</span>
+        </button>
+        <button class="tool-tile" data-tool="photo">
+          <span class="chip tint-red"><svg class="ic"><use href="#i-photo"/></svg></span>
+          <span class="t">รูปติดบัตร</span>
+        </button>
+        <button class="tool-tile" data-tool="idcard">
+          <span class="chip tint-blue"><svg class="ic"><use href="#i-card"/></svg></span>
+          <span class="t">สำเนาบัตร</span>
+        </button>
+        <button class="tool-tile" data-tool="redact">
+          <span class="chip tint-violet"><svg class="ic"><use href="#i-eyeoff"/></svg></span>
+          <span class="t">ปกปิดข้อมูล</span>
+        </button>
+        <button class="tool-tile" data-tool="export">
+          <span class="chip tint-green"><svg class="ic"><use href="#i-down"/></svg></span>
+          <span class="t">ส่งออก PDF</span>
+        </button>
+      </div>
+
+      <div class="sec sec-row">
+        <span>หน้าล่าสุด</span>
+        <button class="lnk" id="lnkAllPages">ดูทั้งหมด</button>
+      </div>
+      <div class="list" id="recentList"></div>
+      <p class="hint" id="recentHint">ยังไม่มีหน้าเอกสาร — เริ่มที่ “สแกนเอกสาร” หรือ “รวมไฟล์ PDF”</p>
+    </div>
+  </section>
+
+  <!-- ================= PAGES ================= -->
+  <section class="view" id="view-pages">
+    <div class="big-head">
+      <h1>เอกสาร</h1>
+      <div class="sub" id="tbSub">ยังไม่มีหน้า</div>
+    </div>
+    <div class="scroll">
+      <div class="chips" style="margin-bottom:14px">
+        <label class="chip-btn"><input type="file" accept="image/*" capture="environment" multiple hidden id="inCam"><svg class="ic"><use href="#i-camera"/></svg>ถ่ายรูป</label>
+        <label class="chip-btn"><input type="file" accept="image/*" multiple hidden id="inImg"><svg class="ic"><use href="#i-image"/></svg>คลังรูป</label>
+        <label class="chip-btn"><input type="file" accept="application/pdf" multiple hidden id="inPdf"><svg class="ic"><use href="#i-doc"/></svg>PDF</label>
+      </div>
+
+      <div class="chips" id="selBar" style="margin-bottom:14px">
+        <button class="chip-btn" id="btnSelAll"><svg class="ic"><use href="#i-check"/></svg>เลือกหมด</button>
+        <button class="chip-btn" id="btnSelNone"><svg class="ic"><use href="#i-square"/></svg>ล้าง</button>
+        <span class="grow"></span>
+        <button class="chip-btn" id="btnRot"><svg class="ic"><use href="#i-rotate"/></svg>หมุน</button>
+        <button class="chip-btn danger" id="btnDel"><svg class="ic"><use href="#i-trash"/></svg>ลบ</button>
+      </div>
+
+      <div id="grid" class="grid"></div>
+
+      <div class="empty" id="emptyHint">
+        <div class="empty-ic"><svg class="ic"><use href="#i-doc"/></svg></div>
+        <p class="empty-t">ยังไม่มีเอกสาร</p>
+        <p class="empty-s">ถ่ายรูป เลือกรูปในเครื่อง หรือเปิดไฟล์ PDF</p>
+        <p class="empty-s">แตะเพื่อเลือก · แตะสองครั้งเพื่อแต่งภาพ · กดค้างแล้วลากเพื่อเรียงลำดับ</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SCAN ================= -->
+  <section class="view" id="view-scan">
+    <div class="flow-head">
+      <button class="back" data-back="pages"><svg class="ic"><use href="#i-left"/></svg></button>
+      <h2>แต่งภาพเอกสาร</h2>
+    </div>
+    <div class="stage">
+      <div class="canvas-host" id="scanHost">
+        <canvas id="scanCv"></canvas>
+        <svg id="cropSvg"></svg>
+      </div>
+    </div>
+    <div class="sheet">
+      <div class="seg accent" id="modeSeg">
+        <button data-mode="orig" class="on">ต้นฉบับ</button>
+        <button data-mode="mag">เอกสารสี</button>
+        <button data-mode="gray">เทา</button>
+        <button data-mode="bw">ขาวดำ</button>
+      </div>
+      <label class="sl"><span>สว่าง</span><input type="range" id="slBright" min="-60" max="60" value="0"></label>
+      <label class="sl"><span>คอนทราสต์</span><input type="range" id="slContrast" min="-60" max="80" value="0"></label>
+      <div class="chips">
+        <button class="chip-btn" id="btnCrop"><svg class="ic"><use href="#i-crop"/></svg>ตัดขอบ</button>
+        <button class="chip-btn" id="btnCropAuto"><svg class="ic"><use href="#i-magic"/></svg>อัตโนมัติ</button>
+        <button class="chip-btn" id="btnCropReset"><svg class="ic"><use href="#i-expand"/></svg>เต็มรูป</button>
+        <button class="chip-btn" id="btnScanRot"><svg class="ic"><use href="#i-rotate"/></svg>หมุน</button>
+      </div>
+      <button class="btn primary" id="btnScanDone">เสร็จ</button>
+    </div>
+  </section>
+
+  <!-- ================= WATERMARK ================= -->
+  <section class="view" id="view-wm">
+    <div class="flow-head">
+      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <h2>ใส่ลายน้ำ</h2>
+    </div>
+    <div class="scroll">
+      <div class="box">
+        <div class="seg" id="wmKind">
+          <button data-k="text" class="on">ลายน้ำจาง</button>
+          <button data-k="stamp">คร่อมสำเนา</button>
+          <button data-k="img">รูป / โลโก้</button>
+        </div>
+        <div id="wmTextBox">
+          <input type="text" id="wmText" class="inp" placeholder="เช่น สำเนาถูกต้อง" value="สำเนา">
+        </div>
+        <div id="wmStampBox" style="display:none">
+          <textarea id="wmStampText" class="inp" rows="3" placeholder="พิมพ์บรรทัดละข้อความ">สำเนาถูกต้อง
+ใช้สำหรับสมัครงานเท่านั้น</textarea>
+          <div class="chips" style="margin-top:10px">
+            <button class="chip-btn" data-preset="สำเนาถูกต้อง|ใช้สำหรับสมัครงานเท่านั้น">สมัครงาน</button>
+            <button class="chip-btn" data-preset="สำเนาถูกต้อง|ใช้สำหรับเปิดบัญชีธนาคารเท่านั้น">เปิดบัญชี</button>
+            <button class="chip-btn" data-preset="สำเนาถูกต้อง|ใช้ประกอบสัญญาเท่านั้น">สัญญา</button>
+          </div>
+          <label class="switch" style="margin-top:12px"><span>เส้นขีดคร่อมบน-ล่าง</span><input type="checkbox" id="wmStrike" checked><i></i></label>
+        </div>
+        <div id="wmImgBox" style="display:none">
+          <label class="pick"><input type="file" accept="image/*" hidden id="wmFile">
+            <svg class="ic"><use href="#i-upload"/></svg>เลือกรูปลายน้ำ</label>
+          <div id="wmImgPrev" class="wm-prev"></div>
+        </div>
+      </div>
+
+      <div class="sec">การจัดวาง</div>
+      <div class="box">
+        <div class="seg" id="wmLayout">
+          <button data-l="center" class="on">กลางหน้า</button>
+          <button data-l="tile">ปูทั้งหน้า</button>
+          <button data-l="corner">มุมล่าง</button>
+          <button data-l="free">วางเอง</button>
+        </div>
+        <label class="sl"><span>ขนาด</span><input type="range" id="wmSize" min="10" max="200" value="70"></label>
+        <label class="sl"><span>ความจาง</span><input type="range" id="wmOpa" min="5" max="100" value="18"></label>
+        <label class="sl"><span>องศา</span><input type="range" id="wmRot" min="-90" max="90" value="35"></label>
+        <div class="row-color" id="wmColorRow">
+          <button class="sw" data-c="#8a8f98" style="background:#8a8f98"></button>
+          <button class="sw on" data-c="#c0392b" style="background:#c0392b"></button>
+          <button class="sw" data-c="#1e5fa8" style="background:#1e5fa8"></button>
+          <button class="sw" data-c="#111111" style="background:#111111"></button>
+        </div>
+      </div>
+
+      <div class="sec">ใส่ให้หน้าไหน</div>
+      <div class="box">
+        <div class="seg" id="wmScopeSeg">
+          <button data-sc="all" class="on">ทุกหน้า</button>
+          <button data-sc="sel">เลือกหน้า</button>
+        </div>
+        <div class="picker" data-picker></div>
+      </div>
+      <p class="hint">ลายน้ำยังไม่ถูกเผาลงไฟล์จนกว่าจะกดส่งออก แก้หรือลบได้ตลอด</p>
+    </div>
+    <div class="foot">
+      <button class="btn primary" id="btnWmApply">ใส่ลายน้ำ</button>
+      <button class="btn ghost danger" id="btnWmClear">ลบของโหมดนี้ออก</button>
+    </div>
+  </section>
+
+  <!-- ================= SIGNATURE ================= -->
+  <section class="view" id="view-sign">
+    <div class="flow-head">
+      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <h2>ลายเซ็น</h2>
+    </div>
+    <div class="scroll">
+      <div class="box">
+        <canvas id="sigPad"></canvas>
+        <div class="chips">
+          <button class="chip-btn" id="btnSigClear"><svg class="ic"><use href="#i-x"/></svg>ล้าง</button>
+          <label class="chip-btn"><svg class="ic"><use href="#i-upload"/></svg>อัปโหลดรูป
+            <input type="file" accept="image/*" hidden id="sigFile"></label>
+          <span class="grow"></span>
+          <button class="btn accent sm" id="btnSigSave">บันทึก</button>
+        </div>
+        <div id="sigSaved" class="sig-saved"></div>
+      </div>
+      <div class="sec">เซ็นหน้าไหน</div>
+      <div class="box">
+        <div class="seg" id="sigScopeSeg">
+          <button data-sc="all">ทุกหน้า</button>
+          <button data-sc="sel" class="on">เลือกหน้า</button>
+        </div>
+        <div class="picker" data-picker></div>
+      </div>
+      <div class="sec">ตัวเลือก</div>
+      <div class="box">
+        <label class="switch"><span>แนบวันที่ใต้ลายเซ็น</span><input type="checkbox" id="sigDate"><i></i></label>
+      </div>
+      <p class="hint">กดปุ่มด้านล่างแล้วลาก/ย่อขยายลายเซ็นบนหน้าจริงได้เลย</p>
+    </div>
+    <div class="foot">
+      <button class="btn primary" id="btnSigPlace">วางลายเซ็นบนหน้าที่เลือก</button>
+    </div>
+  </section>
+
+  <!-- ================= PLACE SIGNATURE ================= -->
+  <section class="view" id="view-place">
+    <div class="flow-head">
+      <button class="back" id="placeBack" data-back="sign"><svg class="ic"><use href="#i-left"/></svg></button>
+      <h2 id="placeTitle">วางลายเซ็น</h2>
+    </div>
+    <div class="stage">
+      <div class="canvas-host" id="placeHost">
+        <canvas id="placeCv"></canvas>
+        <div id="placeBox" class="obox"><div class="handle br"></div></div>
+      </div>
+    </div>
+    <div class="sheet">
+      <div class="pager">
+        <button class="chip-btn round" id="btnPlacePrev"><svg class="ic"><use href="#i-left"/></svg></button>
+        <span id="placeLbl"></span>
+        <button class="chip-btn round" id="btnPlaceNext"><svg class="ic"><use href="#i-right"/></svg></button>
+      </div>
+      <div class="two">
+        <button class="btn ghost danger" id="btnPlaceDel">ลบลายเซ็น</button>
+        <button class="btn primary" id="btnPlaceDone">เสร็จ</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PHOTO ID ================= -->
+  <section class="view" id="view-photo">
+    <div class="flow-head">
+      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <h2>รูปติดบัตร</h2>
+    </div>
+    <div class="scroll">
+      <div class="stage" style="padding:0 0 14px">
+        <div class="canvas-host" id="phHost"><canvas id="phCv"></canvas></div>
+      </div>
+
+      <div class="chips">
+        <label class="chip-btn"><input type="file" accept="image/*" capture="user" hidden id="phCam"><svg class="ic"><use href="#i-camera"/></svg>ถ่ายรูป</label>
+        <label class="chip-btn"><input type="file" accept="image/*" hidden id="phFile"><svg class="ic"><use href="#i-image"/></svg>เลือกรูป</label>
+      </div>
+
+      <div class="sec">พื้นหลัง</div>
+      <div class="box">
+        <div class="row-color" id="phBgRow">
+          <button class="sw on" data-c="#ffffff" style="background:#ffffff"></button>
+          <button class="sw" data-c="#3b6fd6" style="background:#3b6fd6"></button>
+          <button class="sw" data-c="#c62828" style="background:#c62828"></button>
+          <button class="sw" data-c="#d9dee6" style="background:#d9dee6"></button>
+          <button class="sw" data-c="" style="background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/12px 12px"></button>
+        </div>
+        <label class="switch"><span>เปลี่ยนพื้นหลังให้อัตโนมัติ</span><input type="checkbox" id="phCut" checked><i></i></label>
+        <label class="sl"><span>ความไว</span><input type="range" id="phTol" min="6" max="80" value="30"></label>
+        <label class="sl"><span>ซูม</span><input type="range" id="phZoom" min="100" max="260" value="100"></label>
+        <p class="hint" style="margin:0">ถ่ายหน้าฉากพื้นเรียบสีเดียว (ผนังขาว/เทา) แล้วยืนห่างจากผนังหน่อย จะตัดพื้นหลังได้เนียนที่สุด · ถ้าตัดไม่สวยให้ปิดสวิตช์แล้วใช้รูปเดิม</p>
+      </div>
+
+      <div class="sec">ขนาดรูป</div>
+      <div class="box"><div class="radios" id="phSize"></div></div>
+
+      <div class="sec">กระดาษที่จะปริ๊น</div>
+      <div class="box">
+        <div class="radios" id="phPaper"></div>
+        <div class="mm-row" id="phCustomRow" style="display:none">
+          <input type="number" class="inp" id="phCw" value="100" min="20" max="600" step="1">
+          <span>×</span>
+          <input type="number" class="inp" id="phCh" value="150" min="20" max="900" step="1">
+          <span>มม.</span>
+        </div>
+        <label class="switch"><span>เส้นไกด์สำหรับตัด</span><input type="checkbox" id="phGuide" checked><i></i></label>
+        <div id="phLayoutInfo" style="color:var(--muted);font-size:13px"></div>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn primary" id="btnPhMake"><span>สร้างไฟล์พร้อมปริ๊น</span></button>
+    </div>
+  </section>
+
+  <!-- ================= ID CARD ================= -->
+  <section class="view" id="view-idcard">
+    <div class="flow-head">
+      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <h2>สำเนาบัตร หน้า-หลัง</h2>
+    </div>
+    <div class="scroll">
+      <div class="stage" style="padding:0 0 12px"><div class="canvas-host"><canvas id="idCv"></canvas></div></div>
+      <div class="chips">
+        <label class="chip-btn"><input type="file" accept="image/*" capture="environment" hidden id="idFrontCam"><svg class="ic"><use href="#i-camera"/></svg>ถ่ายด้านหน้า</label>
+        <label class="chip-btn"><input type="file" accept="image/*" capture="environment" hidden id="idBackCam"><svg class="ic"><use href="#i-camera"/></svg>ถ่ายด้านหลัง</label>
+      </div>
+      <div class="chips">
+        <label class="chip-btn"><input type="file" accept="image/*" hidden id="idFrontFile"><svg class="ic"><use href="#i-image"/></svg>เลือกรูปหน้า</label>
+        <label class="chip-btn"><input type="file" accept="image/*" hidden id="idBackFile"><svg class="ic"><use href="#i-image"/></svg>เลือกรูปหลัง</label>
+      </div>
+
+      <div class="sec">ข้อความคร่อมสำเนา</div>
+      <div class="box">
+        <label class="switch"><span>ใส่ข้อความคร่อม</span><input type="checkbox" id="idStamp" checked><i></i></label>
+        <textarea id="idLines" class="inp" rows="2">สำเนาถูกต้อง
+ใช้สำหรับสมัครงานเท่านั้น</textarea>
+        <div class="chips">
+          <button class="chip-btn" data-idp="สำเนาถูกต้อง|ใช้สำหรับสมัครงานเท่านั้น">สมัครงาน</button>
+          <button class="chip-btn" data-idp="สำเนาถูกต้อง|ใช้สำหรับเปิดบัญชีธนาคารเท่านั้น">เปิดบัญชี</button>
+          <button class="chip-btn" data-idp="สำเนาถูกต้อง|ใช้ประกอบสัญญาเท่านั้น">สัญญา</button>
+        </div>
+        <label class="switch"><span>เส้นขีดคร่อม</span><input type="checkbox" id="idStrike" checked><i></i></label>
+      </div>
+
+      <div class="sec">กระดาษ / ขนาดบัตร</div>
+      <div class="box">
+        <div class="seg" id="idPaper">
+          <button data-p="a4" class="on">A4</button>
+          <button data-p="a5">A5</button>
+          <button data-p="letter">Letter</button>
+        </div>
+        <label class="sl"><span>ขยายบัตร</span><input type="range" id="idScale" min="100" max="160" value="100"></label>
+        <div id="idInfo" style="color:var(--muted);font-size:13px"></div>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn primary" id="btnIdMake">สร้างไฟล์พร้อมปริ๊น</button>
+    </div>
+  </section>
+
+  <!-- ================= REDACT ================= -->
+  <section class="view" id="view-redactPick">
+    <div class="flow-head">
+      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <h2>ปกปิดข้อมูล</h2>
+    </div>
+    <div class="scroll">
+      <div class="sec">ปกปิดหน้าไหน</div>
+      <div class="box">
+        <div class="seg" id="rdScopeSeg">
+          <button data-sc="all">ทุกหน้า</button>
+          <button data-sc="sel" class="on">เลือกหน้า</button>
+        </div>
+        <div class="picker" data-picker></div>
+      </div>
+      <p class="hint">หน้าที่มาจากไฟล์ PDF จะถูกแปลงเป็นรูปให้อัตโนมัติ เพราะกล่องดำที่วางทับ PDF ไม่ได้ลบตัวอักษรข้างใต้ — คนรับยัง copy ข้อความออกไปได้</p>
+    </div>
+    <div class="foot"><button class="btn primary" id="btnRdStart">เริ่มขีดดำ</button></div>
+  </section>
+
+  <section class="view" id="view-redact">
+    <div class="flow-head">
+      <button class="back" data-back="redactPick"><svg class="ic"><use href="#i-left"/></svg></button>
+      <h2>ขีดดำทับข้อมูล</h2>
+    </div>
+    <div class="stage"><div class="canvas-host"><canvas id="rdCv"></canvas></div></div>
+    <div class="sheet">
+      <div class="pager">
+        <button class="chip-btn round" id="btnRdPrev"><svg class="ic"><use href="#i-left"/></svg></button>
+        <span id="rdLbl"></span>
+        <button class="chip-btn round" id="btnRdNext"><svg class="ic"><use href="#i-right"/></svg></button>
+      </div>
+      <div class="chips">
+        <span id="rdCount" style="font-size:12.5px;color:var(--muted)"></span>
+        <span class="grow"></span>
+        <button class="chip-btn" id="rdFlat"><svg class="ic"><use href="#i-image"/></svg>แปลงเป็นรูป</button>
+        <button class="chip-btn danger" id="btnRdDel"><svg class="ic"><use href="#i-trash"/></svg>ลบกล่อง</button>
+      </div>
+      <button class="btn primary" id="btnRdDone">เสร็จ</button>
+    </div>
+  </section>
+
+  <!-- ================= EXPORT ================= -->
+  <section class="view" id="view-export">
+    <div class="flow-head">
+      <button class="back" data-back="home"><svg class="ic"><use href="#i-left"/></svg></button>
+      <h2>ส่งออก PDF</h2>
+    </div>
+    <div class="scroll">
+      <div class="box">
+        <input type="text" id="exName" class="inp" value="เอกสาร">
+      </div>
+      <div class="sec">ขนาดหน้า</div>
+      <div class="box">
+        <div class="seg" id="exSize">
+          <button data-s="a4" class="on">A4</button>
+          <button data-s="fit">ตามขนาดรูป</button>
+        </div>
+      </div>
+      <div class="sec">คุณภาพ / ขนาดไฟล์</div>
+      <div class="box">
+        <div class="seg" id="exQual">
+          <button data-q="0.72">ไฟล์เล็ก</button>
+          <button data-q="0.85" class="on">สมดุล</button>
+          <button data-q="0.95">คมชัดสูง</button>
+        </div>
+        <div class="seg" id="exRes">
+          <button data-r="1200">ประหยัด</button>
+          <button data-r="1700" class="on">มาตรฐาน</button>
+          <button data-r="2400">ละเอียด</button>
+        </div>
+        <p class="hint" style="margin:0">“ประหยัด” เหมาะกับส่งไลน์/เมล · “ละเอียด” เหมาะกับเอกสารตัวเล็กหรือต้องปริ๊น</p>
+      </div>
+
+      <div class="sec">เลขหน้า / หัวกระดาษ</div>
+      <div class="box">
+        <label class="switch"><span>ใส่เลขหน้า</span><input type="checkbox" id="exPageNo"><i></i></label>
+        <div class="seg" id="exNoPos">
+          <button data-pos="bc" class="on">ล่างกลาง</button>
+          <button data-pos="br">ล่างขวา</button>
+        </div>
+        <div class="seg" id="exNoFmt">
+          <button data-fmt="full" class="on">หน้า 1 จาก 9</button>
+          <button data-fmt="slash">1 / 9</button>
+        </div>
+        <input type="text" id="exHeader" class="inp" placeholder="ข้อความหัวกระดาษ (เว้นว่างได้)">
+      </div>
+      <div class="sec">ส่งออกหน้าไหน</div>
+      <div class="box">
+        <div class="seg" id="exScopeSeg">
+          <button data-sc="all" class="on">ทุกหน้า</button>
+          <button data-sc="sel">เลือกหน้า</button>
+        </div>
+        <div class="picker" data-picker></div>
+      </div>
+      <p class="hint">อยากแยกไฟล์: เลือกหน้าที่ต้องการในแท็บ “เอกสาร” แล้วเลือก “เฉพาะหน้าที่เลือก”</p>
+    </div>
+    <div class="foot">
+      <button class="btn primary" id="btnExport">สร้าง PDF</button>
+    </div>
+  </section>
+
+  <!-- ================= DONE ================= -->
+  <section class="view" id="view-done">
+    <div class="done-wrap">
+      <div class="done-ic"><svg class="ic"><use href="#i-check"/></svg></div>
+      <div>
+        <div class="done-t" id="doneT">สร้างไฟล์สำเร็จ</div>
+        <div class="done-s" id="doneS">ไฟล์พร้อมบันทึกลงเครื่องหรือส่งต่อแล้ว</div>
+      </div>
+      <div class="done-file">
+        <div class="badge">PDF</div>
+        <div class="nm" id="doneNm">เอกสาร.pdf</div>
+        <div class="sz" id="doneSz"></div>
+      </div>
+    </div>
+    <div class="foot" id="doneActions"></div>
+  </section>
+
+</main>
+
+<nav id="tabs">
+  <button data-v="home" class="on"><svg class="ic"><use href="#i-home"/></svg>หน้าแรก</button>
+  <button data-v="pages"><svg class="ic"><use href="#i-files"/></svg>เอกสาร</button>
+</nav>
+
+<!-- ขั้น "เลือกไฟล์" — ขึ้นทับเมื่อเปิดเครื่องมือที่ต้องมีหน้าเอกสารก่อน -->
+<div id="needFiles">
+  <div class="nf-card">
+    <div class="empty-ic"><svg class="ic"><use href="#i-doc"/></svg></div>
+    <div class="nf-t">ยังไม่มีเอกสารให้ทำงานด้วย</div>
+    <div class="nf-s" id="nfWhat">เลือกไฟล์ที่จะใส่ลายน้ำก่อน</div>
+    <div class="nf-btns">
+      <button class="btn primary" data-nf="cam">ถ่ายรูปเอกสาร</button>
+      <button class="btn ghost" data-nf="img">เลือกรูปในเครื่อง</button>
+      <button class="btn ghost" data-nf="pdf">เปิดไฟล์ PDF</button>
+      <button class="btn ghost" data-nf="close">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="busy"><div class="spin"></div><div id="busyTxt">กำลังทำงาน…</div></div>
+
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/pdf-lib.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/scan.js"></script>
+<script src="js/wm.js"></script>
+<script src="js/sign.js"></script>
+<script src="js/photo.js"></script>
+<script src="js/idcard.js"></script>
+<script src="js/redact.js"></script>
+<script src="js/export.js"></script>
+<script src="js/boot.js"></script>
+</body>
+</html>

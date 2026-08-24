@@ -1,0 +1,219 @@
+'use strict';
+/* ============================================================
+   DocKit — watermark + shared overlay painting (canvas preview)
+   Overlay coords are normalized to the page's VISIBLE box, y down.
+   The PDF writer in export.js mirrors these formulas as vectors.
+   ============================================================ */
+
+const WM = { kind: 'text', layout: 'center', color: '#c0392b', imgUrl: null, imgRatio: 1 };
+
+/* ---------- geometry shared with the exporter ---------- */
+function wmFontPx(o, W, H){ return (o.size / 100) * Math.min(W, H) * 0.14; }
+
+/* returns [{x,y,rot}] anchor points (centres) in visible px */
+function wmSpots(o, W, H){
+  if (o.layout === 'corner') return [{ x: W * 0.78, y: H * 0.94, rot: 0 }];
+  if (o.layout === 'tile'){
+    const out = [], cols = 3, rows = 4;
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++)
+        out.push({ x: W * (c + 0.5) / cols, y: H * (r + 0.5) / rows, rot: o.rot });
+    return out;
+  }
+  return [{ x: W / 2, y: H / 2, rot: o.rot }];
+}
+
+function wmImgSize(o, W, H, ratio){
+  const scale = o.layout === 'tile' ? 0.22 : o.layout === 'corner' ? 0.16 : 0.5;
+  const w = W * scale * (o.size / 100) * 1.4;
+  return { w, h: w / (ratio || 1) };
+}
+
+/* ---------- canvas preview painter ----------
+   layout 'free' = ผู้ใช้ลากวางเอง เก็บเป็น x/y/w/h เหมือน overlay ลายเซ็น
+   จึงเดินสายเดียวกับ paintObj / drawObjPdf                              */
+function isFree(o){ return o.layout === 'free'; }
+
+function paintOverlays(ctx, p, W, H){
+  for (const o of p.overlays){
+    if (o.kind === 'wm' && !isFree(o)) paintWM(ctx, o, W, H);
+    else paintObj(ctx, o, W, H);
+  }
+}
+
+function paintWM(ctx, o, W, H){
+  ctx.save();
+  ctx.globalAlpha = o.opacity / 100;
+  const spots = wmSpots(o, W, H);
+  if (o.type === 'text'){
+    const fs = wmFontPx(o, W, H) * (o.layout === 'tile' ? 0.5 : o.layout === 'corner' ? 0.34 : 1);
+    ctx.font = '700 ' + fs + 'px Sarabun, sans-serif';
+    ctx.fillStyle = o.color;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const s of spots){
+      ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(-s.rot * Math.PI / 180);
+      ctx.fillText(o.text || '', 0, 0); ctx.restore();
+    }
+  } else if (o._img){
+    const sz = wmImgSize(o, W, H, o.ratio);
+    for (const s of spots){
+      ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(-s.rot * Math.PI / 180);
+      ctx.drawImage(o._img, -sz.w / 2, -sz.h / 2, sz.w, sz.h); ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+function paintObj(ctx, o, W, H){
+  ctx.save();
+  ctx.globalAlpha = (o.opacity === undefined ? 100 : o.opacity) / 100;
+  if (o.type === 'img' && o._img){
+    const w = o.w * W, h = o.h * H;
+    const cx = o.x * W + w / 2, cy = o.y * H + h / 2;
+    ctx.translate(cx, cy);
+    if (o.rot) ctx.rotate(-o.rot * Math.PI / 180);   // หมุนรอบจุดกึ่งกลางกล่อง
+    ctx.drawImage(o._img, -w / 2, -h / 2, w, h);
+  } else if (o.type === 'rect'){
+    ctx.fillStyle = o.color || '#000';
+    ctx.fillRect(o.x * W, o.y * H, o.w * W, o.h * H);
+  } else if (o.type === 'text'){
+    const fs = o.fs * H;
+    ctx.font = fs + 'px Sarabun, sans-serif';
+    ctx.fillStyle = o.color || '#111';
+    ctx.textBaseline = 'top';
+    ctx.fillText(o.text || '', o.x * W, o.y * H);
+  }
+  ctx.restore();
+}
+
+/* keep an <img> handle on overlays that carry a dataUrl (for canvas preview) */
+function hydrateOverlay(o){
+  return new Promise(res => {
+    if (o.type !== 'img' || !o.dataUrl || o._img) return res();
+    const im = new Image();
+    im.onload = () => { o._img = im; o.ratio = o.ratio || im.width / im.height; res(); };
+    im.onerror = () => res();
+    im.src = o.dataUrl;
+  });
+}
+
+/* ---------- thumbnails (page + overlays) ---------- */
+async function refreshThumb(p){
+  for (const o of p.overlays) await hydrateOverlay(o);
+  const cv = await renderPageCanvas(p, 540);
+  paintOverlays(cv.getContext('2d'), p, cv.width, cv.height);
+  p.thumb = thumbOf(cv);
+}
+
+/* ---------- ตราคร่อมสำเนา ("ใช้สำหรับ … เท่านั้น") ----------
+   วาดเป็นรูปทีเดียวทั้งบล็อก (หลายบรรทัด + เส้นขีดคร่อม) แล้วส่งเข้า
+   ทางเดียวกับลายน้ำรูป — ได้การจัดวาง/หมุน/ส่งออกเดิมทั้งชุดฟรี
+   และได้ text shaping ของเบราว์เซอร์ ซึ่งวางสระ/วรรณยุกต์ไทยถูก      */
+function makeStampPng(lines, color, strike){
+  const REF = 96, pad = REF * 0.5, lh = REF * 1.42;
+  const m = mkCanvas(10, 10).getContext('2d');
+  const font = '700 ' + REF + 'px Sarabun, sans-serif';
+  m.font = font;
+  const tw = Math.max(...lines.map(t => m.measureText(t).width));
+  const w = Math.ceil(tw + pad * 2);
+  const h = Math.ceil(lines.length * lh + pad * 2);
+  const cv = mkCanvas(w, h);
+  const ctx = cv.getContext('2d');
+  ctx.font = font; ctx.fillStyle = color; ctx.strokeStyle = color;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  lines.forEach((t, i) => ctx.fillText(t, w / 2, pad + lh * (i + 0.5)));
+  if (strike){
+    ctx.lineWidth = Math.max(3, REF * 0.06);
+    ctx.lineCap = 'round';
+    [pad * 0.45, h - pad * 0.45].forEach(y => {
+      ctx.beginPath(); ctx.moveTo(pad * 0.3, y); ctx.lineTo(w - pad * 0.3, y); ctx.stroke();
+    });
+  }
+  return { dataUrl: cv.toDataURL('image/png'), ratio: w / h };
+}
+
+/* ---------- apply / clear ---------- */
+async function applyWatermark(){
+  if (!App.pages.length){ toast('ยังไม่มีหน้า'); return; }
+  const targets = scopePages(segScope('wmScopeSeg'));
+  if (!targets.length){ toast('เลือกหน้าที่จะใส่ก่อน'); return; }
+
+  let stamp = null;
+  if (WM.kind === 'stamp'){
+    const lines = $('wmStampText').value.split('\n').map(t => t.trim()).filter(Boolean);
+    if (!lines.length){ toast('พิมพ์ข้อความที่จะคร่อมก่อน'); return; }
+    stamp = makeStampPng(lines, WM.color, $('wmStrike').checked);
+  }
+
+  const base = {
+    kind: 'wm',
+    // slot แยกช่อง: ลายน้ำจางกับตราคร่อมอยู่บนหน้าเดียวกันได้ ไม่ทับกันเอง
+    slot: WM.kind === 'stamp' ? 'stamp' : 'wm',
+    type: WM.kind === 'stamp' ? 'img' : WM.kind,
+    stamp: WM.kind === 'stamp',
+    text: $('wmText').value || '',
+    dataUrl: stamp ? stamp.dataUrl : WM.imgUrl,
+    ratio: stamp ? stamp.ratio : WM.imgRatio,
+    size: +$('wmSize').value,
+    opacity: +$('wmOpa').value,
+    rot: +$('wmRot').value,
+    layout: WM.layout,
+    color: WM.color
+  };
+  if (WM.kind === 'text' && !base.text.trim()){ toast('ใส่ข้อความลายน้ำก่อน'); return; }
+  if (WM.kind === 'img' && !base.dataUrl){ toast('เลือกรูปลายน้ำก่อน'); return; }
+
+  // โหมด "วางเอง": แปลงทุกชนิดเป็นรูปก่อน จะได้ลาก/ย่อขยายด้วยกล่องเดียวกันหมด
+  if (base.layout === 'free'){
+    if (base.type === 'text'){
+      const t = makeStampPng([base.text], base.color, false);
+      base.dataUrl = t.dataUrl; base.ratio = t.ratio;
+    }
+    base.type = 'img';
+  }
+
+  busy(true, WM.kind === 'stamp' ? 'กำลังคร่อมข้อความ…' : 'กำลังใส่ลายน้ำ…');
+  for (const p of targets){
+    p.overlays = p.overlays.filter(o => !(o.kind === 'wm' && (o.slot || 'wm') === base.slot));
+    const o = Object.assign({}, base);
+    if (base.layout === 'free'){
+      const v = pageVisibleSize(p);
+      o.w = Math.min(0.9, 0.5 * (o.size / 100) * 1.4);
+      o.h = o.w * v.w / (o.ratio * v.h);
+      o.x = 0.5 - o.w / 2;
+      o.y = 0.5 - o.h / 2;
+    }
+    await hydrateOverlay(o);
+    p.overlays.push(o);
+    await refreshThumb(p);
+    await nextFrame();
+  }
+  busy(false);
+  renderGrid();
+
+  if (base.layout === 'free'){
+    startOverlayPlacement(targets, base.slot, 'wm',
+      base.slot === 'stamp' ? 'วางตราคร่อม' : 'วางลายน้ำ');
+    return;
+  }
+  toast((WM.kind === 'stamp' ? 'คร่อมข้อความ ' : 'ใส่ลายน้ำ ') + targets.length + ' หน้า');
+}
+
+async function clearWatermark(){
+  const targets = scopePages(segScope('wmScopeSeg'));
+  if (!targets.length){ toast('เลือกหน้าก่อน'); return; }
+  // ลบเฉพาะช่องที่กำลังเปิดอยู่ (ลายน้ำจาง / ตราคร่อม) ไม่ล้างของอีกช่องทิ้ง
+  const slot = WM.kind === 'stamp' ? 'stamp' : 'wm';
+  const hit = o => o.kind === 'wm' && (o.slot || 'wm') === slot;
+  busy(true, 'กำลังลบ…');
+  let n = 0;
+  for (const p of targets){
+    if (!p.overlays.some(hit)) continue;
+    p.overlays = p.overlays.filter(o => !hit(o));
+    await refreshThumb(p);
+    n++;
+  }
+  busy(false);
+  renderGrid();
+  toast(n ? 'ลบแล้ว ' + n + ' หน้า' : 'ไม่มีอะไรให้ลบ');
+}
