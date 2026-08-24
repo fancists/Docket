@@ -123,7 +123,7 @@ function makeStampPng(lines, color, strike){
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   lines.forEach((t, i) => ctx.fillText(t, w / 2, pad + lh * (i + 0.5)));
   if (strike){
-    ctx.lineWidth = Math.max(3, REF * 0.06);
+    ctx.lineWidth = Math.max(4, REF * 0.11);   // หนาพอให้เหลือรอดตอนย่อลงเป็นขนาดบัตร
     ctx.lineCap = 'round';
     [pad * 0.45, h - pad * 0.45].forEach(y => {
       ctx.beginPath(); ctx.moveTo(pad * 0.3, y); ctx.lineTo(w - pad * 0.3, y); ctx.stroke();

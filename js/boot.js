@@ -255,6 +255,12 @@ function boot(){
   $('idStrike').addEventListener('change', e => { IdCard.strike = e.target.checked; idDraw(); });
   segWire('idPaper', b => { IdCard.paper = b.dataset.p; idDraw(); });
   $('idScale').addEventListener('input', e => { IdCard.scale = +e.target.value; idDraw(); });
+  $('btnIdCropF').onclick = () => openIdCrop('front');
+  $('btnIdCropB').onclick = () => openIdCrop('back');
+  wireIdCrop();
+  $('btnIdAuto').onclick = idCropAuto;
+  $('btnIdFull').onclick = idCropFull;
+  $('btnIdCropDone').onclick = idCropDone;
   $('btnIdMake').onclick = idMakePdf;
   idDraw();
 

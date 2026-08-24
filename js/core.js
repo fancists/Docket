@@ -45,7 +45,7 @@ function busy(on, txt){
 const nextFrame = () => new Promise(r => setTimeout(r, 0));
 
 /* หน้าที่เป็น "flow" ซ่อนแท็บล่างและมีปุ่มย้อนกลับของตัวเอง (ตาม design draft) */
-const FLOW_VIEWS = new Set(['scan', 'wm', 'sign', 'place', 'photo', 'idcard',
+const FLOW_VIEWS = new Set(['scan', 'wm', 'sign', 'place', 'photo', 'idcard', 'idcrop',
                             'redactPick', 'redact', 'export', 'done']);
 
 /* เครื่องมือที่ทำงานกับหน้าเอกสาร — เปิดตอนยังไม่มีไฟล์ = ตายอยู่ตรงนั้น

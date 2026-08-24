@@ -358,6 +358,10 @@
         <label class="chip-btn"><input type="file" accept="image/*" hidden id="idFrontFile"><svg class="ic"><use href="#i-image"/></svg>เลือกรูปหน้า</label>
         <label class="chip-btn"><input type="file" accept="image/*" hidden id="idBackFile"><svg class="ic"><use href="#i-image"/></svg>เลือกรูปหลัง</label>
       </div>
+      <div class="chips">
+        <button class="chip-btn" id="btnIdCropF" disabled><svg class="ic"><use href="#i-crop"/></svg>ปรับขอบหน้า</button>
+        <button class="chip-btn" id="btnIdCropB" disabled><svg class="ic"><use href="#i-crop"/></svg>ปรับขอบหลัง</button>
+      </div>
 
       <div class="sec">ข้อความคร่อมสำเนา</div>
       <div class="box">
@@ -385,6 +389,28 @@
     </div>
     <div class="foot">
       <button class="btn primary" id="btnIdMake">สร้างไฟล์พร้อมปริ๊น</button>
+    </div>
+  </section>
+
+  <!-- ================= ปรับขอบบัตร ================= -->
+  <section class="view" id="view-idcrop">
+    <div class="flow-head">
+      <button class="back" data-back="idcard"><svg class="ic"><use href="#i-left"/></svg></button>
+      <h2 id="idCropTitle">ปรับขอบบัตร</h2>
+    </div>
+    <div class="stage">
+      <div class="canvas-host" id="idCropHost">
+        <canvas id="idCropCv"></canvas>
+        <svg id="idCropSvg" class="on"></svg>
+      </div>
+    </div>
+    <div class="sheet">
+      <p class="hint" style="margin:0">ลากวงกลม 4 มุมให้ทาบขอบบัตรพอดี ระบบจะดัดให้ตรงเอง</p>
+      <div class="chips">
+        <button class="chip-btn" id="btnIdAuto"><svg class="ic"><use href="#i-magic"/></svg>หาขอบอัตโนมัติ</button>
+        <button class="chip-btn" id="btnIdFull"><svg class="ic"><use href="#i-expand"/></svg>เต็มรูป</button>
+      </div>
+      <button class="btn primary" id="btnIdCropDone">เสร็จ</button>
     </div>
   </section>
 
