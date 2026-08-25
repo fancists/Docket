@@ -45,7 +45,8 @@ async function renderCard(srcCv, corners){
   const H = Math.round(CARD.h / 25.4 * CARD_DPI);
   const pts = corners.map(([x, y]) => [x * srcCv.width, y * srcCv.height]);
   const cv = warpQuad(srcCv, pts, W, H);
-  applyFilter(cv, { mode: 'mag', bright: 0, contrast: 0 });
+  // ห้ามใช้ mode 'mag' (ตัวปรับแสงสำหรับกระดาษขาว-หมึกดำ) กับรูปบัตร — มันเข้าใจว่าพื้นบัตร
+  // คือ "กระดาษพื้นหลัง" แล้วดันความสว่างให้ขาวจนภาพ/สีบนบัตรซีดจาง
   return { blob: await canvasToBlob(cv, 'image/jpeg', 0.96), canvas: cv };
 }
 
