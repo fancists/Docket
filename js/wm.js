@@ -74,10 +74,12 @@ function paintWM(ctx, o, W, H){
     if (tw > maxW && tw > 0) fs *= maxW / tw;
     ctx.font = '700 ' + fs + 'px Sarabun, sans-serif';
     ctx.fillStyle = o.color;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // เหตุผลเดียวกับ makeStampPng: ไม่พึ่ง textAlign='center' เพราะ Safari/iOS บางรุ่นไม่ทำตาม
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const half = ctx.measureText(o.text || '').width / 2;
     for (const s of spots){
       ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(-s.rot * Math.PI / 180);
-      ctx.fillText(o.text || '', 0, 0); ctx.restore();
+      ctx.fillText(o.text || '', -half, 0); ctx.restore();
     }
   } else if (o._img){
     const sz = wmImgSize(o, W, H, o.ratio);
@@ -161,8 +163,21 @@ function makeStampPng(lines, color, strike, targetW){
   const cv = mkCanvas(w, h);
   const ctx = cv.getContext('2d');
   ctx.font = font; ctx.fillStyle = color; ctx.strokeStyle = color;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  lines.forEach((t, i) => ctx.fillText(t, w / 2, pad + lh * (i + 0.5)));
+  // ห้ามพึ่ง textAlign='center' — Safari/iOS บางรุ่นไม่ทำตาม แล้ววาดจากกลางภาพไปทางขวา
+  // จนข้อความตกขอบหาย (เจอจากไฟล์จริงของผู้ใช้: ตัวอักษรอยู่ x 534..1081 ของภาพกว้าง 1082)
+  // คำนวณจุดเริ่มเองจาก measureText ของคอนเท็กซ์ตัวที่วาดจริง = ตรงกันทุกเบราว์เซอร์
+  // และได้ความกว้างจากฟอนต์ตัวเดียวกับที่ใช้วาดด้วย (กันวัดคนละฟอนต์กับที่เรนเดอร์)
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  const inner = w - pad;                       // พื้นที่ที่ยอมให้ข้อความกิน
+  lines.forEach((t, i) => {
+    let tw = ctx.measureText(t).width;
+    if (tw > inner){                           // กันเหนียว: ถ้ากว้างเกินคาด ย่อฟอนต์ลงให้พอ
+      ctx.font = '700 ' + (REF * inner / tw) + 'px Sarabun, sans-serif';
+      tw = ctx.measureText(t).width;
+    }
+    ctx.fillText(t, (w - tw) / 2, pad + lh * (i + 0.5));
+    ctx.font = font;                           // คืนขนาดเดิมให้บรรทัดถัดไป
+  });
   if (strike){
     ctx.lineWidth = Math.max(4, REF * 0.11);   // หนาพอให้เหลือรอดตอนย่อลงเป็นขนาดบัตร
     ctx.lineCap = 'round';
