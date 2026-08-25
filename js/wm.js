@@ -23,10 +23,29 @@ function wmSpots(o, W, H){
   return [{ x: W / 2, y: H / 2, rot: o.rot }];
 }
 
+/* ความกว้างสูงสุดที่ลายน้ำข้อความวางได้ตามการจัดวาง — ใช้ร่วมกันทั้งพรีวิวและตอนเขียน PDF */
+function wmTextMaxW(o, W){
+  if (o.layout === 'tile') return W / 3 * 0.9;
+  if (o.layout === 'corner') return W * 0.42;
+  return W * 0.94;
+}
+
 function wmImgSize(o, W, H, ratio){
   const scale = o.layout === 'tile' ? 0.22 : o.layout === 'corner' ? 0.16 : 0.5;
-  const w = W * scale * (o.size / 100) * 1.4;
-  return { w, h: w / (ratio || 1) };
+  const r = ratio || 1;
+  let w = W * scale * (o.size / 100) * 1.4;
+  let h = w / r;
+
+  // หนีบไม่ให้ล้นกรอบที่มันวางอยู่ ไม่งั้นข้อความถูกตัดหายไปเลย (ตราคร่อมยาว + ดันขนาดสูงเจอบ่อย)
+  // tile วางเป็นตาราง 3x4 จึงหนีบตามขนาดช่อง · corner ยึดที่ 0.78W/0.94H จึงเหลือขอบให้แคบกว่า
+  let maxW, maxH;
+  if (o.layout === 'tile'){ maxW = W / 3 * 0.96; maxH = H / 4 * 0.96; }
+  else if (o.layout === 'corner'){ maxW = W * 0.42; maxH = H * 0.11; }
+  else { maxW = W * 0.96; maxH = H * 0.96; }
+
+  if (w > maxW){ w = maxW; h = w / r; }
+  if (h > maxH){ h = maxH; w = h * r; }
+  return { w, h };
 }
 
 /* ---------- canvas preview painter ----------
@@ -46,7 +65,13 @@ function paintWM(ctx, o, W, H){
   ctx.globalAlpha = o.opacity / 100;
   const spots = wmSpots(o, W, H);
   if (o.type === 'text'){
-    const fs = wmFontPx(o, W, H) * (o.layout === 'tile' ? 0.5 : o.layout === 'corner' ? 0.34 : 1);
+    let fs = wmFontPx(o, W, H) * (o.layout === 'tile' ? 0.5 : o.layout === 'corner' ? 0.34 : 1);
+    // ย่อฟอนต์ให้ข้อความพอในกรอบ ไม่งั้นข้อความยาวๆ ทะลุขอบหน้าแล้วถูกตัดหาย
+    // (เจอตั้งแต่ขนาดเริ่มต้นถ้าข้อความยาว) — drawWmPdf ใน export.js ใช้สูตรเดียวกัน
+    ctx.font = '700 ' + fs + 'px Sarabun, sans-serif';
+    const tw = ctx.measureText(o.text || '').width;
+    const maxW = wmTextMaxW(o, W);
+    if (tw > maxW && tw > 0) fs *= maxW / tw;
     ctx.font = '700 ' + fs + 'px Sarabun, sans-serif';
     ctx.fillStyle = o.color;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

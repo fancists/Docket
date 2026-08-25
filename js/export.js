@@ -113,7 +113,10 @@ function drawWmPdf(page, o, geo, font){
     const t = o._txt;
     if (!t) return;
     const fs = wmFontPx(o, W, H) * (o.layout === 'tile' ? 0.5 : o.layout === 'corner' ? 0.34 : 1);
-    const th = fs * (t.h / t.fs), tw = th * (t.w / t.h);
+    let th = fs * (t.h / t.fs), tw = th * (t.w / t.h);
+    // ย่อให้พอในกรอบเหมือน paintWM ไม่งั้นไฟล์ที่ได้ข้อความล้นขอบไม่ตรงกับพรีวิว
+    const maxW = wmTextMaxW(o, W);
+    if (tw > maxW && tw > 0){ const k = maxW / tw; tw *= k; th *= k; }
     for (const s of spots){
       const [ox, oy] = rot2(-tw / 2, -th / 2, s.rot);
       const dx = s.x + ox, dy = (H - s.y) + oy;
