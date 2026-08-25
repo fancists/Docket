@@ -196,18 +196,24 @@ async function boot(){
     }
     wmDraw();
   });
-  $('wmText').addEventListener('input', wmDraw);
+  // wmDraw re-renders the full page (pdf.js pg.render() ต่อ 1 ครั้ง) ทุกครั้งที่เรียก —
+  // ผูกตรงกับ 'input' ของช่องพิมพ์/สไลเดอร์จะยิงรัวหลายสิบครั้งต่อวินาทีจนคิว render
+  // ของ pdf.js worker ล้น แอปเลยดูค้าง/หมุนตอนพิมพ์ลายน้ำหรือลากสไลเดอร์ —
+  // ดีเบาท์เหมือนสไลเดอร์อื่นในแอป (slDeb ใน scan.js, phSl ใน photo.js)
+  let _wmDrawT = null;
+  const wmDrawDeb = () => { clearTimeout(_wmDrawT); _wmDrawT = setTimeout(wmDraw, 150); };
+  $('wmText').addEventListener('input', wmDrawDeb);
   $('wmStampBox').addEventListener('click', e => {
     const b = e.target.closest('[data-preset]');
     if (!b) return;
     $('wmStampText').value = b.dataset.preset.split('|').join('\n');
     wmDraw();
   });
-  $('wmStampText').addEventListener('input', wmDraw);
+  $('wmStampText').addEventListener('input', wmDrawDeb);
   $('wmStrike').addEventListener('change', wmDraw);
   segWire('wmLayout', b => { WM.layout = b.dataset.l; wmDraw(); });
   swatchWire('wmColorRow', c => { WM.color = c; wmDraw(); });
-  ['wmSize', 'wmOpa', 'wmRot'].forEach(id => $(id).addEventListener('input', wmDraw));
+  ['wmSize', 'wmOpa', 'wmRot'].forEach(id => $(id).addEventListener('input', wmDrawDeb));
   $('wmFile').addEventListener('change', async e => {
     const f = e.target.files[0]; e.target.value = '';
     if (!f) return;
