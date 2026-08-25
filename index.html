@@ -123,12 +123,15 @@
         <svg class="ic" viewBox="0 0 24 24"><use href="#i-files"/></svg>จากไฟล์ที่เคยสร้าง
       </button>
 
-      <div class="chips" id="selBar" style="margin-bottom:14px">
+      <div class="chips" id="selBar" style="margin-bottom:10px">
         <button class="chip-btn" id="btnSelAll"><svg class="ic" viewBox="0 0 24 24"><use href="#i-check"/></svg>เลือกหมด</button>
         <button class="chip-btn" id="btnSelNone"><svg class="ic" viewBox="0 0 24 24"><use href="#i-square"/></svg>ล้าง</button>
-        <span class="sel-div"></span>
-        <button class="chip-btn" id="btnRot" disabled><svg class="ic" viewBox="0 0 24 24"><use href="#i-rotate"/></svg>หมุนที่เลือก</button>
-        <button class="chip-btn danger" id="btnDel" disabled><svg class="ic" viewBox="0 0 24 24"><use href="#i-trash"/></svg>ลบที่เลือก</button>
+      </div>
+      <!-- แถวคำสั่ง โผล่เฉพาะตอนเลือกหน้าไว้ — ชัดกว่าโชว์ปุ่มเทาค้างไว้ และไม่ตกบรรทัดบนจอแคบ -->
+      <div class="chips" id="selActions" style="margin-bottom:14px;display:none">
+        <span class="sel-label" id="selLabel"></span>
+        <button class="chip-btn" id="btnRot"><svg class="ic" viewBox="0 0 24 24"><use href="#i-rotate"/></svg>หมุน</button>
+        <button class="chip-btn danger" id="btnDel"><svg class="ic" viewBox="0 0 24 24"><use href="#i-trash"/></svg>ลบ</button>
       </div>
 
       <div id="grid" class="grid"></div>

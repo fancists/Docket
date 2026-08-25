@@ -172,11 +172,16 @@ async function openHistPicker(){
   const box = $('histPickList');
   box.innerHTML = list.length ? list.map(r => {
     const isPdf = /pdf/i.test(r.mime || r.name);
-    return '<label class="row"><input type="checkbox" class="hp-chk" data-id="' + r.id + '">' +
+    // ปุ่มลบต้องอยู่นอก <label> ไม่งั้นกดลบแล้วไปติ๊ก checkbox ด้วย
+    return '<div class="row">' +
+      '<label class="hp-pick"><input type="checkbox" class="hp-chk" data-id="' + r.id + '">' +
       '<div class="badge" style="background:var(--' + (isPdf ? 't-green' : 't-blue') + ')">' +
         (isPdf ? 'PDF' : 'IMG') + '</div>' +
       '<div class="meta"><div class="nm">' + escHtml(r.name) + '</div>' +
-      '<div class="sz">' + histDateText(r.createdAt) + ' · ' + histSizeText(r.size) + '</div></div></label>';
+      '<div class="sz">' + histDateText(r.createdAt) + ' · ' + histSizeText(r.size) + '</div></div></label>' +
+      '<button class="chip-btn round danger" data-hp-del="' + r.id + '" title="ลบไฟล์นี้">' +
+      '<svg class="ic" viewBox="0 0 24 24"><use href="#i-trash"/></svg></button>' +
+      '</div>';
   }).join('') : '<div class="pk-empty">ยังไม่มีไฟล์ในประวัติ</div>';
   $('btnHistPickAdd').disabled = true;
   $('btnHistPickAdd').textContent = 'เพิ่มไฟล์ที่เลือก';
@@ -188,6 +193,14 @@ function wireHistPicker(){
     const n = $('histPickList').querySelectorAll('.hp-chk:checked').length;
     $('btnHistPickAdd').disabled = n === 0;
     $('btnHistPickAdd').textContent = n ? 'เพิ่ม ' + n + ' ไฟล์ที่เลือก' : 'เพิ่มไฟล์ที่เลือก';
+  });
+  $('histPickList').addEventListener('click', async e => {
+    const b = e.target.closest('[data-hp-del]');
+    if (!b) return;
+    e.preventDefault();
+    await historyDelete(+b.dataset.hpDel);
+    toast('ลบแล้ว');
+    await openHistPicker();          // วาดลิสต์ใหม่ ให้ยอดที่เลือกตรงกับของที่เหลือ
   });
   $('histPicker').addEventListener('click', e => {
     if (e.target.id === 'histPicker' || e.target.closest('[data-hp="close"]')){

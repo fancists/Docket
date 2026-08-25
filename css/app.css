@@ -134,7 +134,7 @@ body.flow #tabs{display:none}
 .chip-btn.danger{color:var(--t-red)}
 .chip-btn.round{padding:9px;border-radius:50%}
 .chip-btn:disabled{opacity:.4;pointer-events:none}
-.sel-div{flex:1;min-width:14px;border-bottom:1px dashed var(--line);align-self:center;height:0}
+.sel-label{font-size:12.5px;font-weight:700;color:var(--muted);margin-right:2px}
 
 /* ---------- page grid ---------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:12px}
@@ -339,8 +339,8 @@ textarea.inp{resize:vertical;min-height:84px;line-height:1.6;font-family:inherit
   align-items:flex-end;justify-content:center;background:rgba(10,20,22,.42);
 }
 #histPicker.on{display:flex}
-#histPickList label.row{cursor:pointer}
 #histPickList .pk-empty{padding:10px 2px}
+#histPickList .hp-pick{display:flex;align-items:center;gap:12px;flex:1;min-width:0;cursor:pointer}
 
 #nextStep{
   position:fixed;inset:0;z-index:70;display:none;

@@ -86,9 +86,9 @@ function updateHeader(){
   const files = new Set(App.pages.map(p => p.kind === 'pdf' ? p.pdf.srcId : p.id)).size;
   $('homeSub').textContent = n === 0 ? 'ยังไม่มีเอกสาร'
     : n + ' หน้า · ' + files + ' ไฟล์';
-  // ปุ่มหมุน/ลบใช้งานได้เฉพาะตอนเลือกหน้าไว้ — เทาลงตอนไม่มีอะไรเลือก ให้เห็นชัดว่าเป็น action ของสิ่งที่เลือก
-  $('btnRot').disabled = s === 0;
-  $('btnDel').disabled = s === 0;
+  // แถวคำสั่งโผล่เฉพาะตอนเลือกหน้าไว้ (บอกจำนวนไปด้วย) — ไม่โชว์ปุ่มค้างไว้ให้สงสัยว่าใช้กับอะไร
+  $('selActions').style.display = s ? '' : 'none';
+  $('selLabel').textContent = 'เลือกไว้ ' + s + ' หน้า';
 }
 
 /* หน้าแรก: รายการหน้าล่าสุด (แถวแบบ design draft) */
