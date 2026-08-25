@@ -358,9 +358,15 @@ function idCropFull(){
 async function idCropDone(){
   const side = IdCrop.side, c = IdCard[side];
   busy(true, 'กำลังดัดภาพ…');
-  c.corners = IdCrop.corners.map(p => p.slice());
-  Object.assign(c, await renderCard(c.src, c.corners));
-  c.auto = false;
+  try{
+    c.corners = IdCrop.corners.map(p => p.slice());
+    Object.assign(c, await renderCard(c.src, c.corners));
+    c.auto = false;
+  } catch(e){
+    console.error(e); busy(false);
+    toast('ดัดภาพไม่สำเร็จ: ' + e.message, 3500);
+    return;
+  }
   busy(false);
   showView('idcard');
   idDraw();

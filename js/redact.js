@@ -125,8 +125,14 @@ async function redactNav(d){
 async function redactFlatten(){
   const p = Redact.list[Redact.idx];
   busy(true, 'กำลังแปลงหน้าเป็นรูป…');
-  await flattenPage(p);
-  await refreshThumb(p);
+  try{
+    await flattenPage(p);
+    await refreshThumb(p);
+  } catch(e){
+    console.error(e); busy(false); renderGrid();
+    toast('แปลงหน้าเป็นรูปไม่สำเร็จ: ' + e.message, 3500);
+    return;
+  }
   busy(false);
   renderGrid();
   await drawRedact();
@@ -134,10 +140,16 @@ async function redactFlatten(){
 }
 async function redactDone(){
   busy(true, 'กำลังอัปเดต…');
-  // หน้าที่ยังเป็น PDF และมีกล่องดำ = ข้อความข้างใต้ยังอยู่ ต้องแปลงก่อน
-  for (const p of Redact.list){
-    if (p.kind === 'pdf' && p.overlays.some(o => o.kind === 'redact')) await flattenPage(p);
-    await refreshThumb(p);
+  try{
+    // หน้าที่ยังเป็น PDF และมีกล่องดำ = ข้อความข้างใต้ยังอยู่ ต้องแปลงก่อน
+    for (const p of Redact.list){
+      if (p.kind === 'pdf' && p.overlays.some(o => o.kind === 'redact')) await flattenPage(p);
+      await refreshThumb(p);
+    }
+  } catch(e){
+    console.error(e); busy(false); renderGrid();
+    toast('อัปเดตไม่สำเร็จ: ' + e.message, 3500);
+    return;
   }
   busy(false);
   renderGrid();
