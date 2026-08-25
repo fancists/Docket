@@ -89,6 +89,14 @@ async function boot(){
   $('btnPickHist').onclick = openHistPicker;
   wireHistPicker();
 
+  // ทางออกฉุกเฉิน: ถ้าสปินเนอร์ค้างเพราะอะไรก็ตาม แตะค้าง 2 วิเพื่อปิดเอง ไม่ต้องลบแอปทิ้ง
+  let _busyHold = null;
+  $('busy').addEventListener('pointerdown', () => {
+    _busyHold = setTimeout(() => { busy(false); toast('ยกเลิกการรอแล้ว'); }, 2000);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev =>
+    $('busy').addEventListener(ev, () => clearTimeout(_busyHold)));
+
   $('nextStep').addEventListener('click', e => {
     const act = e.target.closest('[data-ns-action]');
     if (act){
@@ -339,9 +347,12 @@ async function boot(){
   $('exHeader').addEventListener('input', e => { Ex.header = e.target.value; });
   $('btnExport').onclick = doExport;
 
+  // finally: สปินเนอร์ต้องปิดทุกกรณี ถ้ากู้งานค้างพลาดแล้วค้างไว้ = แอปกดอะไรไม่ได้เลย
+  let restored = false;
   busy(true, 'กำลังโหลดงานที่ค้างไว้…');
-  const restored = await loadWorkspace();
-  busy(false);
+  try { restored = await loadWorkspace(); }
+  catch(e){ console.error('loadWorkspace', e); }
+  finally { busy(false); }
   renderGrid();
   renderHome();
   if (restored) toast('กู้คืนงานที่ค้างไว้แล้ว');

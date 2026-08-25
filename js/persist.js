@@ -57,6 +57,15 @@ async function saveWorkspace(){
   } catch(e){ console.error('saveWorkspace', e); }
 }
 
+/* กันค้าง: งานที่ "ไม่ยอมจบ" (pdf worker โหลดไม่ขึ้น / Image ไม่ยิง onload) จะ pending ตลอดไป
+   try/catch ดักไม่ได้เพราะมันไม่ throw — ต้องตัดจบด้วยเวลาเอง ไม่งั้นสปินเนอร์ค้างจนกดอะไรไม่ได้ */
+function withTimeout(promise, ms, fallback){
+  return Promise.race([
+    Promise.resolve(promise).catch(() => fallback),
+    new Promise(res => setTimeout(() => res(fallback), ms))
+  ]);
+}
+
 /* คืนค่า true ถ้ามีงานค้างให้กลับมาทำต่อ */
 async function loadWorkspace(){
   try{
@@ -72,14 +81,15 @@ async function loadWorkspace(){
 
     for (const [id, s] of Object.entries(rec.srcs || {})){
       try{
-        const doc = await pdfjsLib.getDocument({ data: s.bytes.slice(0) }).promise;
-        App.srcs[id] = { bytes: s.bytes, doc };
+        const doc = await withTimeout(pdfjsLib.getDocument({ data: s.bytes.slice(0) }).promise, 8000, null);
+        if (doc) App.srcs[id] = { bytes: s.bytes, doc };
       } catch(e){ console.error('restore pdf src', id, e); }
     }
     // หน้าที่อ้างอิงต้นทาง PDF ที่กู้ไม่สำเร็จ ต้องทิ้งไป ไม่งั้นเปิดไม่ได้
     App.pages = rec.pages.filter(p => p.kind !== 'pdf' || App.srcs[p.pdf.srcId]);
     App.seq = Math.max(App.seq, rec.seq || 0);
-    for (const p of App.pages) for (const o of p.overlays) await hydrateOverlay(o);
+    for (const p of App.pages)
+      for (const o of p.overlays) await withTimeout(hydrateOverlay(o), 4000, null);
     return App.pages.length > 0;
   } catch(e){ console.error('loadWorkspace', e); return false; }
 }
