@@ -25,17 +25,22 @@ function histOpen(){
   });
 }
 
-/* บันทึกไฟล์ที่เพิ่งสร้างเสร็จ — เรียกจาก showDone() อัตโนมัติทุกเครื่องมือ */
+/* บันทึกไฟล์ที่เพิ่งสร้างเสร็จ — เรียกจาก showDone() อัตโนมัติทุกเครื่องมือ
+   เก็บเป็นไบต์ ไม่ใช่ Blob (เหตุผลเดียวกับ persist.js — Blob ใน IndexedDB บน Safari
+   เป็นตัวชี้ไปไฟล์เบื้องหลังที่หลุดได้ ทำให้ไฟล์ในประวัติเปิดไม่ขึ้นภายหลัง)          */
 async function historyAdd(rec){
   try{
+    const mime = rec.mime || rec.blob.type;
+    const size = rec.blob.size;
+    const bytes = await rec.blob.arrayBuffer();
     const db = await histOpen();
     await new Promise((res, rej) => {
       const tx = db.transaction(['meta', 'blobs'], 'readwrite');
       const req = tx.objectStore('meta').add({
-        name: rec.name, mime: rec.mime || rec.blob.type, size: rec.blob.size,
+        name: rec.name, mime, size,
         title: rec.title || '', sub: rec.sub || '', createdAt: Date.now()
       });
-      req.onsuccess = () => tx.objectStore('blobs').put(rec.blob, req.result);
+      req.onsuccess = () => tx.objectStore('blobs').put({ bytes, mime }, req.result);
       tx.oncomplete = res; tx.onerror = () => rej(tx.error);
     });
     await historyPrune(db);
@@ -81,14 +86,17 @@ async function historyList(){
 async function historyBlob(id){
   try{
     const db = await histOpen();
-    const blob = await new Promise((res, rej) => {
+    const rec = await new Promise((res, rej) => {
       const tx = db.transaction('blobs', 'readonly');
       const req = tx.objectStore('blobs').get(id);
       req.onsuccess = () => res(req.result || null);
       req.onerror = () => rej(req.error);
     });
     db.close();
-    return blob;
+    if (!rec) return null;
+    // รายการเก่าที่เคยเก็บเป็น Blob ตรงๆ ยังต้องอ่านได้ ไม่ให้ประวัติเดิมพังตอนอัปเดต
+    if (rec instanceof Blob) return rec;
+    return new Blob([rec.bytes], { type: rec.mime || 'application/pdf' });
   } catch(e){ console.error('historyBlob', e); return null; }
 }
 
