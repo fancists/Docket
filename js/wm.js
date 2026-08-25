@@ -238,14 +238,20 @@ async function applyWatermark(){
   const base = r.base;
 
   busy(true, WM.kind === 'stamp' ? 'กำลังคร่อมข้อความ…' : 'กำลังใส่ลายน้ำ…');
-  for (const p of targets){
-    p.overlays = p.overlays.filter(o => !(o.kind === 'wm' && (o.slot || 'wm') === base.slot));
-    const o = Object.assign({}, base);
-    if (base.layout === 'free') sizeFreeOverlay(o, p);
-    await hydrateOverlay(o);
-    p.overlays.push(o);
-    await refreshThumb(p);
-    await nextFrame();
+  try{
+    for (const p of targets){
+      p.overlays = p.overlays.filter(o => !(o.kind === 'wm' && (o.slot || 'wm') === base.slot));
+      const o = Object.assign({}, base);
+      if (base.layout === 'free') sizeFreeOverlay(o, p);
+      await hydrateOverlay(o);
+      p.overlays.push(o);
+      await refreshThumb(p);
+      await nextFrame();
+    }
+  } catch(e){
+    console.error(e); busy(false); renderGrid();
+    toast('ใส่ลายน้ำไม่สำเร็จ: ' + e.message, 3500);
+    return;
   }
   busy(false);
   renderGrid();
@@ -271,11 +277,17 @@ async function clearWatermark(){
   const hit = o => o.kind === 'wm' && (o.slot || 'wm') === slot;
   busy(true, 'กำลังลบ…');
   let n = 0;
-  for (const p of targets){
-    if (!p.overlays.some(hit)) continue;
-    p.overlays = p.overlays.filter(o => !hit(o));
-    await refreshThumb(p);
-    n++;
+  try{
+    for (const p of targets){
+      if (!p.overlays.some(hit)) continue;
+      p.overlays = p.overlays.filter(o => !hit(o));
+      await refreshThumb(p);
+      n++;
+    }
+  } catch(e){
+    console.error(e); busy(false); renderGrid();
+    toast('ลบไม่สำเร็จ: ' + e.message, 3500);
+    return;
   }
   busy(false);
   renderGrid();
