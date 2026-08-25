@@ -4,12 +4,12 @@
    ตัดขอบบัตรอัตโนมัติ ดัดให้ตรง แล้ววางบนกระดาษขนาดเท่าของจริง
    ============================================================ */
 
-const CARD = { w: 85.6, h: 53.98 };        // ID-1 (บัตรประชาชน/ใบขับขี่/บัตรพนักงาน)
+const CARD = { w: 85.6, h: 53.98, r: 3.18 };  // ID-1 + รัศมีมุมโค้งตามมาตรฐาน ISO/IEC 7810
 const CARD_DPI = 300;
 
 const IdCard = {
   front: null, back: null,                  // {blob, canvas}
-  paper: 'a4', scale: 100, stamp: true, strike: true,
+  paper: 'a4', scale: 100, stamp: true, strike: true, round: true,
   lines: ['สำเนาถูกต้อง', 'ใช้สำหรับสมัครงานเท่านั้น'],
   color: '#1a3a8f'
 };
@@ -39,6 +39,43 @@ function centreQuad(){
   return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
 }
 
+/* เส้นทางสี่เหลี่ยมมุมโค้ง — เขียนด้วย arcTo เอง ไม่ใช้ ctx.roundRect
+   เพราะ Safari รุ่นก่อน 16.4 ยังไม่มี (แอปนี้ใช้บน iPhone เป็นหลัก) */
+function roundRectPath(ctx, x, y, w, h, r){
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y,     x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x,     y + h, r);
+  ctx.arcTo(x,     y + h, x,     y,     r);
+  ctx.arcTo(x,     y,     x + w, y,     r);
+  ctx.closePath();
+}
+
+/* ลบมุมสี่เหลี่ยมออกให้เหลือมุมโค้งเท่าบัตรจริง
+   เติมส่วนที่ตัดด้วยสีขาว (ไม่ใช้ PNG โปร่งใส) เพราะบัตรวางบนกระดาษขาวอยู่แล้ว
+   และคง JPEG ไว้ได้ — ถ้าเปลี่ยนเป็น PNG ไฟล์รูปถ่ายจะใหญ่ขึ้นหลายเท่า */
+function roundCardCorners(cv){
+  const rPx = cv.width * (CARD.r / CARD.w);
+  const keep = mkCanvas(cv.width, cv.height);
+  keep.getContext('2d').drawImage(cv, 0, 0);
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.save();
+  roundRectPath(ctx, 0, 0, cv.width, cv.height, rPx);
+  ctx.clip();
+  ctx.drawImage(keep, 0, 0);
+  ctx.restore();
+  // เส้นขอบบางๆ ให้เห็นรูปทรงบัตรชัดบนกระดาษขาว (บัตรสีอ่อนไม่งั้นขอบจะกลืนหาย)
+  ctx.strokeStyle = 'rgba(120,130,145,.55)';
+  ctx.lineWidth = Math.max(1, cv.width * 0.0016);
+  roundRectPath(ctx, ctx.lineWidth / 2, ctx.lineWidth / 2,
+                cv.width - ctx.lineWidth, cv.height - ctx.lineWidth, rPx);
+  ctx.stroke();
+  return cv;
+}
+
 /* ดัดสี่เหลี่ยมที่เลือกให้เป็นบัตรขนาดจริง */
 async function renderCard(srcCv, corners){
   const W = Math.round(CARD.w / 25.4 * CARD_DPI);
@@ -47,7 +84,16 @@ async function renderCard(srcCv, corners){
   const cv = warpQuad(srcCv, pts, W, H);
   // ห้ามใช้ mode 'mag' (ตัวปรับแสงสำหรับกระดาษขาว-หมึกดำ) กับรูปบัตร — มันเข้าใจว่าพื้นบัตร
   // คือ "กระดาษพื้นหลัง" แล้วดันความสว่างให้ขาวจนภาพ/สีบนบัตรซีดจาง
+  if (IdCard.round) roundCardCorners(cv);
   return { blob: await canvasToBlob(cv, 'image/jpeg', 0.96), canvas: cv };
+}
+
+/* สลับมุมโค้ง/มุมเหลี่ยม ต้องเรนเดอร์ใหม่จากภาพต้นฉบับ เพราะมุมถูกเผาลงในรูปแล้ว */
+async function idRerenderSides(){
+  for (const side of ['front', 'back']){
+    const c = IdCard[side];
+    if (c && c.src) Object.assign(c, await renderCard(c.src, c.corners));
+  }
 }
 
 /* ---------- หาขอบบัตร ----------
