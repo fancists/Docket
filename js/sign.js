@@ -182,7 +182,14 @@ async function drawPlace(){
   const cv = $('placeCv');
   const maxW = Math.min(window.innerWidth - 20, 640);
   const maxH = window.innerHeight * 0.5;
-  const full = await renderPageCanvas(p, 1000);
+  let full;
+  try{ full = await renderPageCanvas(p, 1000); }
+  catch(e){
+    console.error(e);
+    toast('เปิดหน้านี้ไม่ได้ (ไฟล์เสียหรือกู้คืนไม่สำเร็จ): ' + e.message, 3500);
+    $('placeBox').classList.remove('on');
+    return;
+  }
   const s = Math.min(maxW / full.width, maxH / full.height, 1);
   cv.width = Math.round(full.width * s); cv.height = Math.round(full.height * s);
   const ctx = cv.getContext('2d');
@@ -283,7 +290,12 @@ async function placeDelete(){
 }
 async function placeDone(){
   busy(true, 'กำลังอัปเดต…');
-  for (const p of Sig.list) await refreshThumb(p);
+  try{ for (const p of Sig.list) await refreshThumb(p); }
+  catch(e){
+    console.error(e); busy(false); renderGrid();
+    toast('อัปเดตไม่สำเร็จ: ' + e.message, 3500);
+    return;
+  }
   busy(false);
   renderGrid();
   showView('pages');

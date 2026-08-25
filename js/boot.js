@@ -346,11 +346,17 @@ async function boot(){
   $('btnExport').onclick = doExport;
 
   busy(true, 'กำลังโหลดงานที่ค้างไว้…');
-  const restored = await loadWorkspace();
+  const ws = await loadWorkspace();
   busy(false);
   renderGrid();
   renderHome();
-  if (restored) toast('กู้คืนงานที่ค้างไว้แล้ว');
+  if (ws.restored){
+    toast(ws.dropped
+      ? 'กู้คืนงานที่ค้างไว้แล้ว (' + ws.dropped + ' หน้ากู้ไม่ได้ ต้องนำเข้าใหม่)'
+      : 'กู้คืนงานที่ค้างไว้แล้ว');
+  } else if (ws.dropped){
+    toast('งานที่ค้างไว้กู้คืนไม่ได้ ต้องนำเข้าใหม่ทั้งหมด', 3500);
+  }
 
   // ไม่ลง service worker ตอนรันบน localhost — ระหว่างพัฒนามันเสิร์ฟไฟล์เก่า
   // จาก cache ทำให้แก้โค้ดแล้วไม่เห็นผล (เปิดผ่าน IP/โดเมนจริงยังลงปกติ)
