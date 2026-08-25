@@ -134,14 +134,30 @@ async function refreshThumb(p){
    วาดเป็นรูปทีเดียวทั้งบล็อก (หลายบรรทัด + เส้นขีดคร่อม) แล้วส่งเข้า
    ทางเดียวกับลายน้ำรูป — ได้การจัดวาง/หมุน/ส่งออกเดิมทั้งชุดฟรี
    และได้ text shaping ของเบราว์เซอร์ ซึ่งวางสระ/วรรณยุกต์ไทยถูก      */
-function makeStampPng(lines, color, strike){
-  const REF = 96, pad = REF * 0.5, lh = REF * 1.42;
+const STAMP_REF = 96;          // ขนาดฟอนต์อ้างอิงสำหรับวัดสัดส่วน
+const STAMP_MAX_PX = 4000;     // เพดานขนาดแคนวาส (iOS Safari จำกัดพื้นที่แคนวาส)
+
+/* วัดขนาดกล่องตราคร่อมที่ฟอนต์ขนาดหนึ่ง — สัดส่วนไม่ขึ้นกับขนาด จึงใช้หา ratio
+   ล่วงหน้าได้โดยไม่ต้องเรนเดอร์ภาพจริง (ใช้ตอนคำนวณเลย์เอาต์ก่อนรู้ขนาดที่จะวาง) */
+function stampMetrics(lines, ref){
+  const REF = ref || STAMP_REF, pad = REF * 0.5, lh = REF * 1.42;
   const m = mkCanvas(10, 10).getContext('2d');
-  const font = '700 ' + REF + 'px Sarabun, sans-serif';
-  m.font = font;
+  m.font = '700 ' + REF + 'px Sarabun, sans-serif';
   const tw = Math.max(...lines.map(t => m.measureText(t).width));
-  const w = Math.ceil(tw + pad * 2);
-  const h = Math.ceil(lines.length * lh + pad * 2);
+  const w = Math.ceil(tw + pad * 2), h = Math.ceil(lines.length * lh + pad * 2);
+  return { REF, pad, lh, w, h, ratio: w / h };
+}
+
+/* targetW = ความกว้างที่ภาพนี้จะไปวางจริง (พิกเซล) — สร้างภาพให้ใหญ่พอกับที่จะวาง
+   ไม่งั้นภาพ 96px ถูกขยายไปกว้างเป็นสิบเซนติเมตร เหลือแค่ ~200 DPI แล้วสระ/วรรณยุกต์
+   ไทยที่เป็นเส้นบางๆ (เช่น "ี") จะเลือนหายตอนพิมพ์หรือเปิดในโปรแกรมอื่น */
+function makeStampPng(lines, color, strike, targetW){
+  const base = stampMetrics(lines);
+  let s = Math.max(1, (targetW || 2400) / base.w);
+  s = Math.min(s, STAMP_MAX_PX / base.w, STAMP_MAX_PX / base.h);
+  const REF = base.REF * s, pad = REF * 0.5, lh = REF * 1.42;
+  const font = '700 ' + REF + 'px Sarabun, sans-serif';
+  const w = Math.ceil(base.w * s), h = Math.ceil(base.h * s);
   const cv = mkCanvas(w, h);
   const ctx = cv.getContext('2d');
   ctx.font = font; ctx.fillStyle = color; ctx.strokeStyle = color;

@@ -208,14 +208,14 @@ if (document.fonts && document.fonts.ready){
     if (typeof wmDraw === 'function' && App.view === 'wm') wmDraw();
   }).catch(() => {});
 }
-async function stampImage(){
+async function stampImage(targetW){
   const lines = IdCard.lines.filter(Boolean);
-  const key = lines.join('|') + '|' + IdCard.color + '|' + IdCard.strike;
+  const key = lines.join('|') + '|' + IdCard.color + '|' + IdCard.strike + '|' + (targetW || 0);
   if (_stampCache.key === key) return _stampCache;
   if (document.fonts && document.fonts.load && !_fontsReady){
     try { await document.fonts.load('700 96px Sarabun'); } catch(e){}
   }
-  const st = makeStampPng(lines, IdCard.color, IdCard.strike);
+  const st = makeStampPng(lines, IdCard.color, IdCard.strike, targetW);
   return new Promise(res => {
     const im = new Image();
     im.onload = () => { _stampCache = { key, img: im, ratio: st.ratio }; res(_stampCache); };
@@ -244,11 +244,18 @@ function idGapCapFor(p, st){
   return flatH * 0.72;                                  // ให้ตราสูงกว่าช่องว่างราว 1.35 เท่า
 }
 
-/* เรขาคณิตแผ่นเดียวที่ทั้งพรีวิวและตัวเขียน PDF ใช้ร่วมกัน — กันสองฝั่งคำนวณไม่ตรงกัน */
+/* เรขาคณิตแผ่นเดียวที่ทั้งพรีวิวและตัวเขียน PDF ใช้ร่วมกัน — กันสองฝั่งคำนวณไม่ตรงกัน
+   ลำดับสำคัญ: หา ratio ก่อน (วัดจากฟอนต์ ไม่ต้องเรนเดอร์) -> คำนวณว่าจะวางกว้างเท่าไร
+   -> แล้วค่อยสร้างภาพตราคร่อมให้ละเอียดพอกับความกว้างนั้น (400 DPI) */
+const STAMP_DPI = 400;
 async function idGeom(p){
-  const st = IdCard.stamp ? await stampImage() : null;
-  const L = idLayout(p, idGapCapFor(p, st));
-  return { L, st, sb: (st && st.img) ? stampBox(L, p, st) : null };
+  const lines = IdCard.lines.filter(Boolean);
+  if (!IdCard.stamp || !lines.length) return { L: idLayout(p), st: null, sb: null };
+  const ratio = stampMetrics(lines).ratio;
+  const L = idLayout(p, idGapCapFor(p, { img: true, ratio }));
+  const sb = stampBox(L, p, { ratio });
+  const st = await stampImage(Math.round(sb.w / 25.4 * STAMP_DPI));
+  return { L, st, sb };
 }
 
 /* พรีวิวแผ่นกระดาษ */
