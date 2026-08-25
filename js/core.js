@@ -86,6 +86,9 @@ function updateHeader(){
   const files = new Set(App.pages.map(p => p.kind === 'pdf' ? p.pdf.srcId : p.id)).size;
   $('homeSub').textContent = n === 0 ? 'ยังไม่มีเอกสาร'
     : n + ' หน้า · ' + files + ' ไฟล์';
+  // ปุ่มหมุน/ลบใช้งานได้เฉพาะตอนเลือกหน้าไว้ — เทาลงตอนไม่มีอะไรเลือก ให้เห็นชัดว่าเป็น action ของสิ่งที่เลือก
+  $('btnRot').disabled = s === 0;
+  $('btnDel').disabled = s === 0;
 }
 
 /* หน้าแรก: รายการหน้าล่าสุด (แถวแบบ design draft) */
@@ -386,8 +389,10 @@ function renderPickers(except){
     const seg = box.parentElement.querySelector('.seg[id$="ScopeSeg"]');
     const on = seg && seg.querySelector('button.on');
     if (on && on.dataset.sc === 'all'){ box.innerHTML = ''; return; }
-    if (!App.pages.length){ box.innerHTML = '<div class="pk-empty">ยังไม่มีหน้าเอกสาร</div>'; return; }
-    box.innerHTML = App.pages.map((p, i) =>
+    // ปุ่ม "เพิ่มหน้า" ติดไว้เสมอ — เผื่อรูปที่อยากทำยังไม่ได้นำเข้ามา จะได้ไม่ต้องออกไปแท็บเอกสารเอง
+    const addTile = '<div class="pk pk-add" data-add title="เพิ่มหน้าเอกสาร"><svg class="ic" viewBox="0 0 24 24"><use href="#i-plus"/></svg></div>';
+    if (!App.pages.length){ box.innerHTML = addTile + '<div class="pk-empty">ยังไม่มีหน้าเอกสาร</div>'; return; }
+    box.innerHTML = addTile + App.pages.map((p, i) =>
       '<div class="pk' + (App.sel.has(p.id) ? ' on' : '') + '" data-pid="' + p.id + '">' +
       '<img src="' + (p.thumb || '') + '" alt=""><div class="n">' + (i + 1) + '</div></div>').join('');
   });
@@ -398,6 +403,14 @@ function wirePickers(){
     if (box._wired) return;
     box._wired = true;
     box.addEventListener('click', e => {
+      if (e.target.closest('[data-add]')){
+        $('nfTitle').textContent = 'เพิ่มหน้าเอกสาร';
+        $('nfWhat').textContent = 'เลือกไฟล์ที่จะเพิ่มเข้ามา';
+        $('needFiles').querySelector('[data-nf="pdf"]').style.display = '';
+        $('needFiles').querySelector('[data-nf="hist"]').style.display = '';
+        $('needFiles').classList.add('on');
+        return;
+      }
       const el = e.target.closest('.pk');
       if (!el) return;
       const id = el.dataset.pid;

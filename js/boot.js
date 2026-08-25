@@ -75,11 +75,14 @@ async function boot(){
     else showView(k);
   });
   $('needFiles').addEventListener('click', e => {
+    // ถ้ามีหน้าเอกสารอยู่แล้ว (เปิดจากปุ่ม "เพิ่มหน้า" ในตัวเลือกหน้า ไม่ใช่บล็อกเพราะยังไม่มีอะไรเลย)
+    // ปิดกล่องนี้แล้วอยู่หน้าเดิมต่อ ไม่ต้องเด้งกลับหน้าแรก
+    const stay = App.pages.length > 0;
     const b = e.target.closest('[data-nf]');
-    if (!b){ if (e.target.id === 'needFiles'){ $('needFiles').classList.remove('on'); showView('home'); } return; }
+    if (!b){ if (e.target.id === 'needFiles'){ $('needFiles').classList.remove('on'); if (!stay) showView('home'); } return; }
     const k = b.dataset.nf;
     $('needFiles').classList.remove('on');
-    if (k === 'close'){ showView('home'); return; }
+    if (k === 'close'){ if (!stay) showView('home'); return; }
     if (k === 'hist'){ openHistPicker(); return; }
     $(k === 'cam' ? 'inCam' : k === 'img' ? 'inImg' : 'inPdf').click();
   });

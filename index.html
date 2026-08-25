@@ -114,19 +114,21 @@
       <div class="sub" id="tbSub">ยังไม่มีหน้า</div>
     </div>
     <div class="scroll">
-      <div class="chips" style="margin-bottom:14px">
+      <div class="chips" style="margin-bottom:10px">
         <label class="chip-btn"><input type="file" accept="image/*" capture="environment" multiple hidden id="inCam"><svg class="ic" viewBox="0 0 24 24"><use href="#i-camera"/></svg>ถ่ายรูป</label>
         <label class="chip-btn"><input type="file" accept="image/*" multiple hidden id="inImg"><svg class="ic" viewBox="0 0 24 24"><use href="#i-image"/></svg>คลังรูป</label>
         <label class="chip-btn"><input type="file" accept="application/pdf" multiple hidden id="inPdf"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>PDF</label>
-        <button class="chip-btn" id="btnPickHist"><svg class="ic" viewBox="0 0 24 24"><use href="#i-files"/></svg>จากไฟล์ที่เคยสร้าง</button>
       </div>
+      <button class="pick" id="btnPickHist" style="width:100%;margin-bottom:14px">
+        <svg class="ic" viewBox="0 0 24 24"><use href="#i-files"/></svg>จากไฟล์ที่เคยสร้าง
+      </button>
 
       <div class="chips" id="selBar" style="margin-bottom:14px">
         <button class="chip-btn" id="btnSelAll"><svg class="ic" viewBox="0 0 24 24"><use href="#i-check"/></svg>เลือกหมด</button>
         <button class="chip-btn" id="btnSelNone"><svg class="ic" viewBox="0 0 24 24"><use href="#i-square"/></svg>ล้าง</button>
-        <span class="grow"></span>
-        <button class="chip-btn" id="btnRot"><svg class="ic" viewBox="0 0 24 24"><use href="#i-rotate"/></svg>หมุน</button>
-        <button class="chip-btn danger" id="btnDel"><svg class="ic" viewBox="0 0 24 24"><use href="#i-trash"/></svg>ลบ</button>
+        <span class="sel-div"></span>
+        <button class="chip-btn" id="btnRot" disabled><svg class="ic" viewBox="0 0 24 24"><use href="#i-rotate"/></svg>หมุนที่เลือก</button>
+        <button class="chip-btn danger" id="btnDel" disabled><svg class="ic" viewBox="0 0 24 24"><use href="#i-trash"/></svg>ลบที่เลือก</button>
       </div>
 
       <div id="grid" class="grid"></div>
