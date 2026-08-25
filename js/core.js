@@ -192,6 +192,20 @@ function orderQuadTLFirst(corners){
   return (fwd[1][0] - fwd[1][1]) >= (bwd[1][0] - bwd[1][1]) ? fwd : bwd;
 }
 
+/* ตั้งแคนวาสพรีวิวให้คมตามความละเอียดจอจริง — ถ้าตั้ง width เท่า CSS px เฉยๆ
+   บนจอ 2x/3x จะเบลอ ตัวอักษรไทยเสียสระ/วรรณยุกต์จนดูเหมือนตัวหนังสือไม่ครบ
+   คืน ctx ที่ scale ไว้แล้ว ผู้เรียกจึงวาดด้วยหน่วย logical (W,H) ได้เหมือนเดิม */
+function fitCanvas(cv, W, H){
+  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+  cv.style.width = W + 'px';
+  cv.style.height = H + 'px';
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+
 /* ---------- canvas utils ---------- */
 function mkCanvas(w, h){
   const c = document.createElement('canvas');

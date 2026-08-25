@@ -258,9 +258,7 @@ async function idDraw(){
   const p = PH_PAPERS.find(x => x.id === IdCard.paper) || PH_PAPERS[0];
   const maxH = Math.min(360, window.innerHeight * 0.4);
   const H = Math.round(maxH), W = Math.round(H * p.w / p.h);
-  cv.width = W; cv.height = H;
-  cv.style.width = W + 'px'; cv.style.height = H + 'px';
-  const ctx = cv.getContext('2d');
+  const ctx = fitCanvas(cv, W, H);
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
 
   const tok = ++_idDrawToken;

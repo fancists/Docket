@@ -138,6 +138,8 @@ function photoApplyBg(cv, tol, bg){
 }
 
 /* ---------- ประกอบรูปตามขนาดที่เลือก ---------- */
+let _phGesture = false;        // ระหว่างลาก/หุบนิ้ว ข้ามการตัดพื้นหลัง (flood fill) ให้ลื่น
+
 function photoCompose(px){
   const s = Photo.size, ar = s.w / s.h;
   const H = px || Math.round(s.h / 25.4 * PH_DPI);
@@ -155,8 +157,31 @@ function photoCompose(px){
   const dy = (H - dh) / 2 + Photo.oy * (dh - H) / 2;
   ctx.drawImage(bm, dx, dy, dw, dh);
 
-  if (Photo.cut) photoApplyBg(cv, Photo.tol, Photo.bg);
+  if (Photo.cut && !_phGesture) photoApplyBg(cv, Photo.tol, Photo.bg);
   return cv;
+}
+
+/* ---------- คณิตศาสตร์ของการซูม/เลื่อน (แบบ Photos บน iPhone) ----------
+   Photo.ox/oy เก็บเป็นสัดส่วนของส่วนที่ล้นกรอบ (-1..1) ซึ่งคิดต่อตรงๆ ยาก
+   จึงแปลงไปกลับผ่าน "ตำแหน่งรูปในกรอบ" (dx/dy) แล้วยึดจุดที่นิ้วจับไว้ให้ติดนิ้ว */
+const PH_ZMIN = 1, PH_ZMAX = 2.6;
+const phClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function phGeom(zoom){
+  const s = Photo.size, ar = s.w / s.h, bm = Photo.bm;
+  // ใช้กรอบเดียวกับไฟล์ที่ส่งออกจริง (ปัดเศษเหมือน photoCompose) เพื่อไม่ให้ตำแหน่งเคลื่อน
+  const H = Math.round(s.h / 25.4 * PH_DPI), W = Math.round(H * ar);
+  const cover = Math.max(W / bm.width, H / bm.height) * (zoom === undefined ? Photo.zoom : zoom);
+  const dw = bm.width * cover, dh = bm.height * cover;
+  return { W, H, cover, dw, dh,
+           dx: (W - dw) / 2 + Photo.ox * (dw - W) / 2,
+           dy: (H - dh) / 2 + Photo.oy * (dh - H) / 2 };
+}
+
+/* กำหนดตำแหน่งรูปในกรอบ แล้วแปลงกลับเป็น ox/oy (แกนที่ไม่มีส่วนล้น = เลื่อนไม่ได้ ตั้งเป็น 0) */
+function phSetOffset(dx, dy, g){
+  Photo.ox = (g.dw - g.W) > 0.5 ? phClamp((dx - (g.W - g.dw) / 2) * 2 / (g.dw - g.W), -1, 1) : 0;
+  Photo.oy = (g.dh - g.H) > 0.5 ? phClamp((dy - (g.H - g.dh) / 2) * 2 / (g.dh - g.H), -1, 1) : 0;
 }
 
 /* ---------- พรีวิว ---------- */
@@ -165,9 +190,7 @@ function photoDraw(){
   const s = Photo.size, ar = s.w / s.h;
   const maxH = Math.min(300, window.innerHeight * 0.34);
   const H = Math.round(maxH), W = Math.round(H * ar);
-  cv.width = W; cv.height = H;
-  cv.style.width = W + 'px'; cv.style.height = H + 'px';
-  const ctx = cv.getContext('2d');
+  const ctx = fitCanvas(cv, W, H);
 
   if (!Photo.bm){
     ctx.fillStyle = '#f1f3f5'; ctx.fillRect(0, 0, W, H);
@@ -298,24 +321,85 @@ async function photoMakePdf(){
   busy(false);
 }
 
-/* ---------- ลากเลื่อนรูปในกรอบ ---------- */
+/* ---------- ลาก/หุบนิ้วซูม แบบ Photos บน iPhone ----------
+   หลักการ: จำ "จุดบนรูป" ที่อยู่ใต้นิ้ว (หรือใต้กลางสองนิ้ว) ตอนเริ่มจับ แล้วทุกเฟรม
+   บังคับให้จุดนั้นอยู่ใต้นิ้วตำแหน่งใหม่เสมอ — ได้ทั้งลาก 1:1 (นิ้วไปทางไหนรูปไปทางนั้น)
+   และซูมเข้าหาจุดที่หุบนิ้ว ไม่ใช่ซูมเข้ากลางรูป                                      */
 function wirePhotoPan(){
   const cv = $('phCv');
-  let st = null;
+  const pts = new Map();
+  let g0 = null;                 // สถานะตอนเริ่มจับ
+
+  const midOf = () => {
+    const v = [...pts.values()];
+    if (!v.length) return null;
+    if (v.length === 1) return { x: v[0].x, y: v[0].y, d: 0 };
+    return { x: (v[0].x + v[1].x) / 2, y: (v[0].y + v[1].y) / 2,
+             d: Math.hypot(v[0].x - v[1].x, v[0].y - v[1].y) };
+  };
+  // แปลงพิกัดหน้าจอ -> พิกัดในกรอบอ้างอิง (หน่วยเดียวกับ phGeom)
+  const toFrame = (m, g) => {
+    const r = cv.getBoundingClientRect();
+    return { u: (m.x - r.left) / r.width * g.W, v: (m.y - r.top) / r.height * g.H };
+  };
+  const grab = () => {
+    const m = midOf(); if (!m) { g0 = null; return; }
+    const g = phGeom();
+    const f = toFrame(m, g);
+    g0 = { d: m.d, zoom: Photo.zoom,          // จุดบนรูป (source px) ที่อยู่ใต้นิ้วตอนนี้
+           xs: (f.u - g.dx) / g.cover, ys: (f.v - g.dy) / g.cover };
+  };
+
   cv.addEventListener('pointerdown', e => {
     if (!Photo.bm) return;
-    st = { x: e.clientX, y: e.clientY, ox: Photo.ox, oy: Photo.oy, w: cv.width, h: cv.height };
-    cv.setPointerCapture(e.pointerId); e.preventDefault();
+    // ลงทะเบียนนิ้วก่อน แล้วค่อย capture — ถ้า capture พลาด (บางเบราว์เซอร์/บางกรณีโยน
+    // NotFoundError) ต้องไม่ทำให้ทั้ง gesture ตายไปทั้งอัน
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    _phGesture = true;
+    grab();
+    try { cv.setPointerCapture(e.pointerId); } catch(err){}
+    e.preventDefault();
   });
+
   cv.addEventListener('pointermove', e => {
-    if (!st) return;
-    Photo.ox = Math.max(-1, Math.min(1, st.ox - (e.clientX - st.x) / st.w * 2));
-    Photo.oy = Math.max(-1, Math.min(1, st.oy - (e.clientY - st.y) / st.h * 2));
-    photoDraw(); e.preventDefault();
+    if (!pts.has(e.pointerId) || !g0) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const m = midOf();
+
+    if (pts.size >= 2 && g0.d > 0){
+      Photo.zoom = phClamp(g0.zoom * (m.d / g0.d), PH_ZMIN, PH_ZMAX);
+      $('phZoom').value = Math.round(Photo.zoom * 100);
+    }
+    const g = phGeom();                        // cover ใหม่หลังซูม
+    const f = toFrame(m, g);
+    phSetOffset(f.u - g0.xs * g.cover, f.v - g0.ys * g.cover, g);
+    photoDraw();
+    e.preventDefault();
   }, { passive: false });
-  const up = () => { st = null; };
+
+  const up = e => {
+    pts.delete(e.pointerId);
+    if (pts.size === 0){
+      g0 = null; _phGesture = false;
+      photoDraw();                             // วาดจริงรอบสุดท้าย (ตัดพื้นหลังด้วย)
+    } else grab();                              // ยกนิ้วเดียว ยึดจุดใหม่ให้ลากต่อเนียน
+  };
   cv.addEventListener('pointerup', up);
   cv.addEventListener('pointercancel', up);
+
+  // เดสก์ท็อป: ล้อเมาส์ซูมเข้าหาตำแหน่งเมาส์
+  cv.addEventListener('wheel', e => {
+    if (!Photo.bm) return;
+    e.preventDefault();
+    const g = phGeom();
+    const f = toFrame({ x: e.clientX, y: e.clientY }, g);
+    const xs = (f.u - g.dx) / g.cover, ys = (f.v - g.dy) / g.cover;
+    Photo.zoom = phClamp(Photo.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1), PH_ZMIN, PH_ZMAX);
+    $('phZoom').value = Math.round(Photo.zoom * 100);
+    const g2 = phGeom();
+    phSetOffset(f.u - xs * g2.cover, f.v - ys * g2.cover, g2);
+    photoDraw();
+  }, { passive: false });
 }
 
 function buildPhotoSizeList(){

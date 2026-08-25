@@ -213,11 +213,10 @@ async function wmDraw(){
   const maxH = Math.min(360, window.innerHeight * 0.4);
   const targets = scopePages(segScope('wmScopeSeg'));
   const p = targets[0] || App.pages[0];
-  const ctx = cv.getContext('2d');
 
   if (!p){
     const H = Math.round(maxH), W = Math.round(H * 0.75);
-    cv.width = W; cv.height = H; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    const ctx = fitCanvas(cv, W, H);
     ctx.fillStyle = '#f1f3f5'; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = '#9aa4b2'; ctx.font = '600 13px Sarabun, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('ยังไม่มีหน้าเอกสาร', W / 2, H / 2);
@@ -229,7 +228,7 @@ async function wmDraw(){
   if (tok !== _wmDrawToken) return;
   const vsz = pageVisibleSize(p);
   const H = Math.round(maxH), W = Math.round(H * vsz.w / vsz.h);
-  cv.width = W; cv.height = H; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  const ctx = fitCanvas(cv, W, H);
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
   ctx.drawImage(src, 0, 0, W, H);
 
