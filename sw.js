@@ -2,7 +2,7 @@
    vendor/icons  -> cache-first  (big, never change without a rename)
    app files     -> network-first with cache fallback (so updates show up
                     immediately instead of being pinned to a stale cache)      */
-const V = 'dockit-v8';
+const V = 'dockit-v9';
 const SHELL = [
   './', './index.html', './css/app.css',
   './js/core.js', './js/scan.js', './js/wm.js', './js/sign.js', './js/photo.js', './js/idcard.js', './js/redact.js',

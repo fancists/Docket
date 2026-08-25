@@ -180,12 +180,29 @@ async function stampImage(){
 
 /* กล่องตราคร่อม — ตั้งใจให้ "คร่อม" ทับรอยต่อจริง ไม่ใช่ลอยอยู่ในช่องว่างระหว่างบัตร
    (คร่อมแบบนี้เป็นธรรมเนียมรับรองสำเนา: ตัดแยกหน้า/หลังออกจากกันไม่ได้โดยไม่ให้ตราขาด) */
+const STAMP_MAX_W = 0.92;               // สัดส่วนความกว้างกระดาษที่ตราใช้ได้มากสุด
 function stampBox(L, p, st){
   let h = L.gap * 1.35;                 // สูงกว่าช่องว่างเสมอ = คาบเข้าไปในบัตรทั้งสองด้านแน่นอน
   let w = h * (st.ratio || 1);
-  const maxW = p.w * 0.92;
+  const maxW = p.w * STAMP_MAX_W;
   if (w > maxW){ w = maxW; h = w / (st.ratio || 1); }
   return { w, h, cx: p.w / 2, cy: (L.y1 + L.ch + L.y2) / 2 };
+}
+
+/* ช่องว่างระหว่างบัตรต้องแคบกว่าความสูงของตรา ไม่งั้นตราไปนั่งในช่องว่างเฉยๆ ไม่ทับบัตร
+   ข้อความยาว = ตราแบนมาก พอหนีบความกว้างไม่ให้ล้นกระดาษ ความสูงจะหดต่ำกว่าช่องว่าง
+   (เจอบน A4/Letter ที่ช่องว่างกว้าง 30+ มม.) จึงต้องบีบช่องว่างตามความแบนของตรา */
+function idGapCapFor(p, st){
+  if (!st || !st.img) return Infinity;
+  const flatH = p.w * STAMP_MAX_W / (st.ratio || 1);   // ความสูงตราเมื่อกางเต็มความกว้าง
+  return flatH * 0.72;                                  // ให้ตราสูงกว่าช่องว่างราว 1.35 เท่า
+}
+
+/* เรขาคณิตแผ่นเดียวที่ทั้งพรีวิวและตัวเขียน PDF ใช้ร่วมกัน — กันสองฝั่งคำนวณไม่ตรงกัน */
+async function idGeom(p){
+  const st = IdCard.stamp ? await stampImage() : null;
+  const L = idLayout(p, idGapCapFor(p, st));
+  return { L, st, sb: (st && st.img) ? stampBox(L, p, st) : null };
 }
 
 /* พรีวิวแผ่นกระดาษ */
@@ -200,7 +217,9 @@ async function idDraw(){
   const ctx = cv.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
 
-  const L = idLayout(p);
+  const tok = ++_idDrawToken;
+  const { L, st, sb } = await idGeom(p);
+  if (tok !== _idDrawToken) return;        // มีการวาดรอบใหม่แล้ว ทิ้งอันนี้
   const px = W / p.w;                      // มม. -> พิกเซลพรีวิว
   const drawCard = (side, y) => {
     const src = IdCard[side];
@@ -223,21 +242,18 @@ async function idDraw(){
   $('btnIdCropF').disabled = !IdCard.front;
   $('btnIdCropB').disabled = !IdCard.back;
 
-  if (IdCard.stamp && (IdCard.front || IdCard.back)){
-    const tok = ++_idDrawToken;
-    const st = await stampImage();
-    if (tok !== _idDrawToken || !st.img) return;      // มีการวาดรอบใหม่แล้ว ทิ้งอันนี้
-    const sb = stampBox(L, p, st);
+  if (sb && st.img && (IdCard.front || IdCard.back)){
     ctx.globalAlpha = 0.92;
     ctx.drawImage(st.img, (sb.cx - sb.w / 2) * px, (sb.cy - sb.h / 2) * px, sb.w * px, sb.h * px);
     ctx.globalAlpha = 1;
   }
 }
 
-function idLayout(p){
+function idLayout(p, gapMax){
   const s = IdCard.scale / 100;
   const cw = CARD.w * s, ch = CARD.h * s;
-  const gap = Math.max(10, (p.h - ch * 2) / 6);
+  let gap = Math.max(10, (p.h - ch * 2) / 6);
+  if (gapMax !== undefined) gap = Math.max(3, Math.min(gap, gapMax));
   const y1 = p.h / 2 - ch - gap / 2;
   const y2 = p.h / 2 + gap / 2;
   return { cw, ch, gap, y1, y2 };
@@ -248,7 +264,11 @@ async function idMakePdf(){
   busy(true, 'กำลังสร้างไฟล์…');
   try{
     const p = PH_PAPERS.find(x => x.id === IdCard.paper) || PH_PAPERS[0];
-    const L = idLayout(p);
+    if (document.fonts && document.fonts.load){
+      try { await document.fonts.load('700 96px Sarabun'); } catch(e){}
+    }
+    // ใช้เรขาคณิตชุดเดียวกับพรีวิว ไฟล์ที่ได้จะตรงกับที่เห็นบนจอเสมอ
+    const { L, st, sb } = await idGeom(p);
     const doc = await PDFLib.PDFDocument.create();
     const page = doc.addPage([p.w * MM, p.h * MM]);
     const x = (p.w - L.cw) / 2;
@@ -260,14 +280,9 @@ async function idMakePdf(){
       page.drawImage(img, { x: x * MM, y: (p.h - y - L.ch) * MM,
                             width: L.cw * MM, height: L.ch * MM });
     }
-    if (IdCard.stamp){
-      if (document.fonts && document.fonts.load){
-        try { await document.fonts.load('700 96px Sarabun'); } catch(e){}
-      }
-      const st = makeStampPng(IdCard.lines.filter(Boolean), IdCard.color, IdCard.strike);
-      const b = await (await fetch(st.dataUrl)).arrayBuffer();
+    if (sb && st.img){
+      const b = await (await fetch(st.img.src)).arrayBuffer();
       const im = await doc.embedPng(new Uint8Array(b));
-      const sb = stampBox(L, p, st);
       page.drawImage(im, {
         x: (sb.cx - sb.w / 2) * MM, y: (p.h - sb.cy - sb.h / 2) * MM,
         width: sb.w * MM, height: sb.h * MM, opacity: 0.92
