@@ -30,8 +30,17 @@ const Photo = {
   bg: '#ffffff', cut: true, tol: 30,
   zoom: 1, ox: 0, oy: 0,          // pan เป็นสัดส่วนของพื้นที่ที่ล้นกรอบ (-1..1)
   size: PH_SIZES[1], paper: 'a4', guide: true,
-  cw: 100, ch: 150                // ขนาดกระดาษกำหนดเอง (มม.)
+  cw: 100, ch: 150,               // ขนาดกระดาษกำหนดเอง (มม.)
+  sw: 30, sh: 40,                 // ขนาดรูปกำหนดเอง (มม.)
+  fmt: 'pdf'                      // ไฟล์ที่ได้: pdf | jpg | png
 };
+
+/* ขนาดรูปกำหนดเอง — คืนเป็นรูปแบบเดียวกับ PH_SIZES เพื่อให้โค้ดที่เหลือใช้ต่อได้เลย */
+function phCustomSize(){
+  const w = Math.max(10, Math.min(200, +Photo.sw || 0));
+  const h = Math.max(10, Math.min(200, +Photo.sh || 0));
+  return { id: 'custom', label: 'กำหนดเอง (' + w + ' × ' + h + ' มม.)', w, h };
+}
 
 function photoPaperDef(){
   if (Photo.paper === 'single') return null;
@@ -231,8 +240,9 @@ function photoLayout(){
 function photoLayoutInfo(){
   const L = photoLayout(), s = Photo.size;
   const el = $('phLayoutInfo');
+  const pxOf = (wmm, hmm) => Math.round(wmm / 25.4 * PH_DPI) + ' × ' + Math.round(hmm / 25.4 * PH_DPI) + ' พิกเซล';
   if (Photo.paper === 'single'){
-    el.textContent = 'ไฟล์ขนาด ' + s.w + ' × ' + s.h + ' มม. (1 รูป)';
+    el.textContent = 'ไฟล์ขนาด ' + s.w + ' × ' + s.h + ' มม. (1 รูป) · ' + pxOf(s.w, s.h);
   } else if (!L.total){
     el.textContent = 'กระดาษเล็กกว่ารูป ' + s.w + ' × ' + s.h + ' มม. — เลือกกระดาษใหญ่ขึ้น';
   } else {
@@ -241,6 +251,11 @@ function photoLayoutInfo(){
       + (land ? ' วางกระดาษแนวนอน' : '') + ' · ขนาดจริง ' + s.w + ' × ' + s.h + ' มม.';
   }
   buildPaperList();
+  // ป้ายปุ่มต้องตรงกับไฟล์ที่จะได้ ไม่ใช่บอก "พร้อมปริ๊น" ตอนผู้ใช้เลือก JPG ไปอัปโหลด
+  const btn = $('btnPhMake');
+  if (btn) btn.querySelector('span').textContent =
+    Photo.fmt === 'pdf' ? 'สร้างไฟล์พร้อมปริ๊น'
+      : 'สร้างไฟล์ ' + Photo.fmt.toUpperCase() + (Photo.paper === 'single' ? '' : ' (แผ่นเรียงรูป)');
 }
 
 /* ลิสต์กระดาษ — โชว์จำนวนรูปที่ได้ต่อแผ่นของขนาดรูปที่เลือกอยู่ */
@@ -270,12 +285,21 @@ function buildPaperList(){
 }
 
 /* ---------- สร้าง PDF พร้อมปริ๊น ---------- */
-async function photoMakePdf(){
+async function photoMakeFile(){
   if (!Photo.bm){ toast('เลือกรูปก่อน'); return; }
   const L0 = photoLayout();
   if (!L0.total){ toast('กระดาษที่เลือกเล็กกว่าขนาดรูป', 3000); return; }
   busy(true, 'กำลังสร้างไฟล์…');
-  try{
+  try {
+    if (Photo.fmt === 'pdf') await photoMakePdfInner();
+    else await photoMakeImage();
+  } catch(e){ console.error(e); toast('สร้างไฟล์ไม่สำเร็จ: ' + e.message, 4000); }
+  busy(false);
+}
+
+async function photoMakePdfInner(){
+  const L0 = photoLayout();
+  {
     const L = L0, s = Photo.size;
     const cv = photoCompose();
     const transparent = !Photo.bg;
@@ -315,10 +339,7 @@ async function photoMakePdf(){
           ' — สั่งพิมพ์แบบ “ขนาดจริง 100%” อย่าให้ย่อพอดีหน้า',
       continueTo: 'wm'
     });
-  } catch(e){
-    console.error(e); toast('สร้างไฟล์ไม่สำเร็จ: ' + e.message, 4000);
   }
-  busy(false);
 }
 
 /* ---------- ลาก/หุบนิ้วซูม แบบ Photos บน iPhone ----------
@@ -403,7 +424,58 @@ function wirePhotoPan(){
 }
 
 function buildPhotoSizeList(){
-  $('phSize').innerHTML = PH_SIZES.map((s, i) =>
-    '<label><input type="radio" name="phsz" value="' + s.id + '"' +
-    (s.id === Photo.size.id ? ' checked' : '') + '><span>' + s.label + '</span></label>').join('');
+  const row = (id, label) =>
+    '<label><input type="radio" name="phsz" value="' + id + '"' +
+    (id === Photo.size.id ? ' checked' : '') + '><span>' + label + '</span></label>';
+  $('phSize').innerHTML = PH_SIZES.map(s => row(s.id, s.label)).join('')
+    + row('custom', 'กำหนดขนาดเอง');
+  $('phSizeCustomRow').style.display = Photo.size.id === 'custom' ? '' : 'none';
+}
+
+/* ---------- ส่งออกเป็นไฟล์รูป (JPG/PNG) ----------
+   ไว้เอาไปอัปโหลดต่อในเว็บที่รับแต่ไฟล์รูป ไม่รับ PDF
+   paper 'single' = ได้รูปเดี่ยวขนาดเท่าที่ตั้ง · เลือกกระดาษ = ได้เป็นแผ่นเรียงรูปแบบรูปภาพ */
+async function photoSheetCanvas(){
+  const s = Photo.size;
+  if (Photo.paper === 'single') return photoCompose();
+  const L = photoLayout();
+  const px = PH_DPI / 25.4;                       // มม. -> พิกเซล
+  const cv = mkCanvas(Math.round(L.paper.w * px), Math.round(L.paper.h * px));
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+  const one = photoCompose();
+  const w = s.w * px, h = s.h * px, gap = (L.gap || 0) * px;
+  const totalW = L.cols * w + (L.cols - 1) * gap;
+  const totalH = L.rows * h + (L.rows - 1) * gap;
+  const x0 = (cv.width - totalW) / 2, y0 = (cv.height - totalH) / 2;
+  for (let r = 0; r < L.rows; r++){
+    for (let c = 0; c < L.cols; c++){
+      const x = x0 + c * (w + gap), y = y0 + r * (h + gap);
+      ctx.drawImage(one, x, y, w, h);
+      if (Photo.guide){
+        ctx.strokeStyle = 'rgba(184,192,204,1)'; ctx.lineWidth = Math.max(1, px * 0.12);
+        ctx.strokeRect(x, y, w, h);
+      }
+    }
+    await nextFrame();
+  }
+  return cv;
+}
+
+async function photoMakeImage(){
+  const s = Photo.size;
+  const png = Photo.fmt === 'png';
+  const transparent = png && !Photo.bg;
+  const cv = await photoSheetCanvas();
+  const blob = await canvasToBlob(cv, png ? 'image/png' : 'image/jpeg', 0.95);
+  const name = 'รูปติดบัตร.' + (png ? 'png' : 'jpg');
+  showDone(blob, name, {
+    title: 'ไฟล์รูปพร้อมอัปโหลด',
+    sub: (Photo.paper === 'single'
+      ? 'รูปเดี่ยว ' + s.w + ' × ' + s.h + ' มม.'
+      : 'แผ่นเรียงรูปบนกระดาษ ' + (photoPaperDef() || {}).label) +
+      ' — ไฟล์ขนาด ' + cv.width + ' × ' + cv.height + ' พิกเซล' +
+      (transparent ? ' (พื้นหลังโปร่งใส)' : ''),
+    continueTo: 'wm'
+  });
 }

@@ -46,7 +46,8 @@ const nextFrame = () => new Promise(r => setTimeout(r, 0));
 
 /* หน้าที่เป็น "flow" ซ่อนแท็บล่างและมีปุ่มย้อนกลับของตัวเอง (ตาม design draft) */
 const FLOW_VIEWS = new Set(['scan', 'wm', 'sign', 'place', 'photo', 'idcard', 'idcrop',
-                            'redactPick', 'redact', 'export', 'done', 'history']);
+                            'redactPick', 'redact', 'export', 'done', 'history',
+                            'library', 'libFolder']);
 
 /* เครื่องมือที่ทำงานกับหน้าเอกสาร — เปิดตอนยังไม่มีไฟล์ = ตายอยู่ตรงนั้น
    จึงคั่นด้วยขั้น "เลือกไฟล์" ให้นำเข้าได้จากในเครื่องมือเลย */
@@ -74,6 +75,9 @@ function showView(v){
   if (v === 'sign' && typeof Sig !== 'undefined' && Sig.fit) Sig.fit();
   if (v === 'wm' && typeof wmDraw === 'function') wmDraw();
   if (v === 'history' && typeof renderHistory === 'function') renderHistory();
+  if (v === 'library' && typeof renderLib === 'function') renderLib();
+  // ออกจากคลังกลับหน้าแรก = เลิกโหมดเลือกไฟล์ ไม่ให้ค้างไปโหมดถัดไป
+  if (v === 'home' && typeof exitLibPick === 'function') exitLibPick();
   if (v === 'home') renderHome();
   renderPickers();
   needFiles(v);
@@ -422,6 +426,7 @@ function wirePickers(){
         $('nfWhat').textContent = 'เลือกไฟล์ที่จะเพิ่มเข้ามา';
         $('needFiles').querySelector('[data-nf="pdf"]').style.display = '';
         $('needFiles').querySelector('[data-nf="hist"]').style.display = '';
+        $('needFiles').querySelector('[data-nf="lib"]').style.display = '';
         $('needFiles').classList.add('on');
         return;
       }

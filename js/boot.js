@@ -47,7 +47,9 @@ async function boot(){
     b.addEventListener('click', () => showView(b.dataset.back)));
   $('lnkAllPages').onclick = () => showView('pages');
   $('lnkHistory').onclick = () => showView('history');
+  $('lnkLibrary').onclick = () => { exitLibPick(); showView('library'); };
   wireHistory();
+  wireLibrary();
 
   /* ---------- home tiles ---------- */
   // ผูกกับทั้งหน้าแรก ไม่ใช่แค่ .tools อันแรก เพราะตอนนี้มีสองกลุ่ม (เครื่องมือทั่วไป / เอกสารประจำตัว)
@@ -61,6 +63,7 @@ async function boot(){
       $('nfWhat').textContent = 'ถ่ายรูปใหม่ หรือเลือกรูปที่มีอยู่แล้วมาแต่งก็ได้';
       $('needFiles').querySelector('[data-nf="pdf"]').style.display = 'none';
       $('needFiles').querySelector('[data-nf="hist"]').style.display = 'none';
+      $('needFiles').querySelector('[data-nf="lib"]').style.display = '';
       $('needFiles').classList.add('on');
     }
     else if (k === 'combine'){
@@ -69,6 +72,7 @@ async function boot(){
       $('nfWhat').textContent = 'เลือกไฟล์ที่จะรวม — จากเครื่องหรือจากไฟล์ที่เคยสร้างก็ได้';
       $('needFiles').querySelector('[data-nf="pdf"]').style.display = '';
       $('needFiles').querySelector('[data-nf="hist"]').style.display = '';
+      $('needFiles').querySelector('[data-nf="lib"]').style.display = '';
       $('needFiles').classList.add('on');
     }
     else if (k === 'redact'){ showView('redactPick'); }
@@ -84,6 +88,18 @@ async function boot(){
     $('needFiles').classList.remove('on');
     if (k === 'close'){ if (!stay) showView('home'); return; }
     if (k === 'hist'){ openHistPicker(); return; }
+    if (k === 'lib'){
+      const back = App.view;                    // เลือกเสร็จกลับมาที่เครื่องมือเดิม
+      openLibPicker('เลือกไฟล์จากคลัง', async file => {
+        busy(true, 'กำลังเปิดไฟล์…');
+        if (/pdf/i.test(file.type)) await addPdfFiles([file]); else await addImageFiles([file]);
+        busy(false);
+        renderGrid();
+        showView(back === 'library' || back === 'libFolder' ? 'pages' : back);
+        if (App.view === 'wm') wmDraw();
+      });
+      return;
+    }
     $(k === 'cam' ? 'inCam' : k === 'img' ? 'inImg' : 'inPdf').click();
   });
   $('btnPickHist').onclick = openHistPicker;
@@ -281,8 +297,23 @@ async function boot(){
   phSl('phTol', 'tol', v => v);
   phSl('phZoom', 'zoom', v => v / 100);
   $('phSize').addEventListener('change', e => {
-    const s = PH_SIZES.find(x => x.id === e.target.value);
-    if (s){ Photo.size = s; photoDraw(); }
+    if (e.target.name !== 'phsz') return;
+    Photo.size = e.target.value === 'custom'
+      ? phCustomSize()
+      : (PH_SIZES.find(x => x.id === e.target.value) || Photo.size);
+    $('phSizeCustomRow').style.display = Photo.size.id === 'custom' ? '' : 'none';
+    photoDraw();
+  });
+  const phCustomSz = () => {
+    Photo.sw = +$('phSw').value; Photo.sh = +$('phSh').value;
+    if (Photo.size.id === 'custom'){ Photo.size = phCustomSize(); photoDraw(); }
+  };
+  $('phSw').addEventListener('input', phCustomSz);
+  $('phSh').addEventListener('input', phCustomSz);
+  segWire('phFmt', b => {
+    Photo.fmt = b.dataset.f;
+    // ไฟล์รูปสำหรับอัปโหลดมักอยากได้รูปเดี่ยว — ใบ้ให้เห็นจำนวนพิกเซลที่จะได้
+    photoLayoutInfo();
   });
   $('phPaper').addEventListener('change', e => {
     if (e.target.name !== 'phpaper') return;
@@ -296,7 +327,7 @@ async function boot(){
   $('phCw').addEventListener('input', phCustom);
   $('phCh').addEventListener('input', phCustom);
   $('phGuide').addEventListener('change', e => { Photo.guide = e.target.checked; });
-  $('btnPhMake').onclick = photoMakePdf;
+  $('btnPhMake').onclick = photoMakeFile;
 
   /* ---------- ตัวเลือกหน้าในตัวเครื่องมือ ---------- */
   ['wmScopeSeg', 'exScopeSeg', 'sigScopeSeg', 'rdScopeSeg'].forEach(id => segWire(id, () => {
@@ -313,6 +344,11 @@ async function boot(){
   });
   idImp('idFrontCam', 'front'); idImp('idFrontFile', 'front');
   idImp('idBackCam', 'back');   idImp('idBackFile', 'back');
+  // หยิบรูปบัตรจากคลังของฉัน — เลือกเสร็จกลับมาหน้าสำเนาบัตรเองแล้วตัดขอบให้ต่อ
+  const idFromLib = (btn, side, label) => $(btn).onclick = () =>
+    openLibPicker(label, async file => { showView('idcard'); await idLoad(side, file); });
+  idFromLib('btnIdLibF', 'front', 'เลือกรูปด้านหน้าจากคลัง');
+  idFromLib('btnIdLibB', 'back',  'เลือกรูปด้านหลังจากคลัง');
   const idLines = () => { IdCard.lines = $('idLines').value.split(/\r?\n/).map(t => t.trim()); idDraw(); };
   $('idLines').addEventListener('input', idLines);
   $('view-idcard').addEventListener('click', e => {

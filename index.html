@@ -100,6 +100,12 @@
       <p class="hint" id="recentHint">ยังไม่มีหน้าเอกสาร — เริ่มที่ “สแกนเอกสาร” หรือ “รวมไฟล์ PDF”</p>
 
       <div class="sec sec-row">
+        <span>คลังของฉัน</span>
+        <button class="lnk" id="lnkLibrary">เปิดคลัง</button>
+      </div>
+      <p class="hint" style="margin-top:0">เก็บเอกสารที่ใช้บ่อยไว้เป็นโฟลเดอร์ (สำเนาบัตร ทะเบียนบ้าน รูปหน้า-หลังบัตร) หยิบมาใช้ได้เลยไม่ต้องถ่ายใหม่</p>
+
+      <div class="sec sec-row">
         <span>ไฟล์ที่เคยสร้าง</span>
         <button class="lnk" id="lnkHistory">ดูทั้งหมด</button>
       </div>
@@ -349,7 +355,25 @@
       </div>
 
       <div class="sec">ขนาดรูป</div>
-      <div class="box"><div class="radios" id="phSize"></div></div>
+      <div class="box">
+        <div class="radios" id="phSize"></div>
+        <div class="mm-row" id="phSizeCustomRow" style="display:none">
+          <input type="number" class="inp" id="phSw" value="30" min="10" max="200" step="1">
+          <span>×</span>
+          <input type="number" class="inp" id="phSh" value="40" min="10" max="200" step="1">
+          <span>มม.</span>
+        </div>
+      </div>
+
+      <div class="sec">ไฟล์ที่ได้</div>
+      <div class="box">
+        <div class="seg" id="phFmt">
+          <button data-f="pdf" class="on">PDF (ปริ๊น)</button>
+          <button data-f="jpg">JPG</button>
+          <button data-f="png">PNG</button>
+        </div>
+        <p class="hint" style="margin:10px 0 0">เลือก JPG/PNG ถ้าจะเอาไปอัปโหลดในเว็บที่ไม่รับไฟล์ PDF · PNG เก็บพื้นหลังโปร่งใสได้ (ถ้าเลือกพื้นหลังแบบโปร่งใส)</p>
+      </div>
 
       <div class="sec">กระดาษที่จะปริ๊น</div>
       <div class="box">
@@ -384,6 +408,10 @@
       <div class="chips">
         <label class="chip-btn"><input type="file" accept="image/*" hidden id="idFrontFile"><svg class="ic" viewBox="0 0 24 24"><use href="#i-image"/></svg>เลือกรูปหน้า</label>
         <label class="chip-btn"><input type="file" accept="image/*" hidden id="idBackFile"><svg class="ic" viewBox="0 0 24 24"><use href="#i-image"/></svg>เลือกรูปหลัง</label>
+      </div>
+      <div class="chips" style="margin-top:8px">
+        <button class="chip-btn" id="btnIdLibF"><svg class="ic" viewBox="0 0 24 24"><use href="#i-files"/></svg>หน้าจากคลัง</button>
+        <button class="chip-btn" id="btnIdLibB"><svg class="ic" viewBox="0 0 24 24"><use href="#i-files"/></svg>หลังจากคลัง</button>
       </div>
       <div class="chips">
         <button class="chip-btn" id="btnIdCropF" disabled><svg class="ic" viewBox="0 0 24 24"><use href="#i-crop"/></svg>ปรับขอบหน้า</button>
@@ -544,6 +572,48 @@
     </div>
   </section>
 
+  <!-- ================= LIBRARY: โฟลเดอร์ ================= -->
+  <section class="view" id="view-library">
+    <div class="flow-head">
+      <button class="back" data-back="home"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
+      <h2 id="libTitle">คลังของฉัน</h2>
+    </div>
+    <div class="scroll">
+      <p class="hint" id="libSummary" style="margin-top:0"></p>
+      <div class="list" id="libFolders"></div>
+      <div class="empty" id="libHint">
+        <div class="empty-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-files"/></svg></div>
+        <p class="empty-t">ยังไม่มีโฟลเดอร์</p>
+        <p class="empty-s">เก็บเอกสารที่ใช้บ่อยไว้ที่นี่ เช่น สำเนาบัตร ทะเบียนบ้าน รูปหน้า-หลังบัตร<br>จะได้ไม่ต้องถ่ายหรือหาไฟล์ใหม่ทุกครั้ง</p>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="btn primary" id="btnLibNewFolder">สร้างโฟลเดอร์ใหม่</button>
+    </div>
+  </section>
+
+  <!-- ================= LIBRARY: ไฟล์ในโฟลเดอร์ ================= -->
+  <section class="view" id="view-libFolder">
+    <div class="flow-head">
+      <button class="back" data-back="library"><svg class="ic" viewBox="0 0 24 24"><use href="#i-left"/></svg></button>
+      <h2 id="libFolderTitle">โฟลเดอร์</h2>
+    </div>
+    <div class="scroll">
+      <div class="chips" style="margin-bottom:12px">
+        <label class="chip-btn"><input type="file" accept="image/*" capture="environment" multiple hidden id="libCam"><svg class="ic" viewBox="0 0 24 24"><use href="#i-camera"/></svg>ถ่ายรูป</label>
+        <label class="chip-btn"><input type="file" accept="image/*" multiple hidden id="libImg"><svg class="ic" viewBox="0 0 24 24"><use href="#i-image"/></svg>คลังรูป</label>
+        <label class="chip-btn"><input type="file" accept="application/pdf" multiple hidden id="libPdf"><svg class="ic" viewBox="0 0 24 24"><use href="#i-doc"/></svg>PDF</label>
+      </div>
+      <p class="hint" id="libUseHint" style="margin-top:0;display:none">แตะไฟล์เพื่อเลือกใช้</p>
+      <div class="libgrid" id="libItems"></div>
+      <div class="empty" id="libItemsHint">
+        <div class="empty-ic"><svg class="ic" viewBox="0 0 24 24"><use href="#i-image"/></svg></div>
+        <p class="empty-t">โฟลเดอร์นี้ยังว่าง</p>
+        <p class="empty-s">กดถ่ายรูป เลือกรูปในเครื่อง หรือเปิดไฟล์ PDF เพื่อเก็บไว้ใช้ซ้ำ</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ================= HISTORY ================= -->
   <section class="view" id="view-history">
     <div class="flow-head">
@@ -598,8 +668,23 @@
       <button class="btn primary" data-nf="cam">ถ่ายรูปเอกสาร</button>
       <button class="btn ghost" data-nf="img">เลือกรูปในเครื่อง</button>
       <button class="btn ghost" data-nf="pdf">เปิดไฟล์ PDF</button>
+      <button class="btn ghost" data-nf="lib">เลือกจากคลังของฉัน</button>
       <button class="btn ghost" data-nf="hist">เลือกจากไฟล์ที่เคยสร้าง</button>
       <button class="btn ghost" data-nf="close">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- เมนูจัดการไฟล์ในคลัง (แตะไฟล์ในโหมดจัดการ) -->
+<div id="libAct">
+  <div class="nf-card">
+    <div class="nf-t">ไฟล์ในคลัง</div>
+    <div class="nf-s" id="libActName"></div>
+    <div class="nf-btns">
+      <button class="btn primary" data-la="use">ใช้เป็นหน้าเอกสาร</button>
+      <button class="btn ghost" data-la="ren">เปลี่ยนชื่อ</button>
+      <button class="btn ghost danger" data-la="del">ลบออกจากคลัง</button>
+      <button class="btn ghost" data-la="close">ยกเลิก</button>
     </div>
   </div>
 </div>
@@ -641,6 +726,7 @@
 <script src="js/redact.js"></script>
 <script src="js/export.js"></script>
 <script src="js/history.js"></script>
+<script src="js/library.js"></script>
 <script src="js/persist.js"></script>
 <script src="js/boot.js"></script>
 </body>

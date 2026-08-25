@@ -2,11 +2,11 @@
    vendor/icons  -> cache-first  (big, never change without a rename)
    app files     -> network-first with cache fallback (so updates show up
                     immediately instead of being pinned to a stale cache)      */
-const V = 'dockit-v13';
+const V = 'dockit-v15';
 const SHELL = [
   './', './index.html', './css/app.css',
   './js/core.js', './js/scan.js', './js/wm.js', './js/sign.js', './js/photo.js', './js/idcard.js', './js/redact.js',
-  './js/export.js', './js/history.js', './js/persist.js', './js/boot.js',
+  './js/export.js', './js/history.js', './js/library.js', './js/persist.js', './js/boot.js',
   './vendor/pdf.min.js', './vendor/pdf.worker.min.js', './vendor/pdf-lib.min.js',
   './vendor/Sarabun-Regular.ttf', './vendor/Sarabun-Bold.ttf',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'
