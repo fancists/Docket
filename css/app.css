@@ -135,6 +135,11 @@ body.flow #tabs{display:none}
 .chip-btn.round{padding:9px;border-radius:50%}
 .chip-btn:disabled{opacity:.4;pointer-events:none}
 .sel-label{font-size:12.5px;font-weight:700;color:var(--muted);margin-right:2px}
+/* แถวปุ่ม "ทำต่อกับที่เลือก" — 4 ปุ่มต้องลงแถวเดียวบนจอมือถือปกติ (390px)
+   ไม่งั้นแถบควบคุมกินที่เหนือตะแกรงจนแทบไม่เห็นหน้าเอกสาร */
+.chips.tight{gap:6px}
+.chips.tight .chip-btn{padding:8px 11px 8px 9px;font-size:12.5px;gap:4px}
+.chips.tight .chip-btn .ic{width:14px;height:14px}
 
 /* ---------- page grid ---------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:12px}

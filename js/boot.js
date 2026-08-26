@@ -21,7 +21,7 @@ function selectSeg(id, val){
   if (!box) return;
   box.querySelectorAll('button').forEach(b => b.classList.toggle('on',
     b.dataset.l === val || b.dataset.k === val || b.dataset.mode === val ||
-    b.dataset.s === val || b.dataset.p === val));
+    b.dataset.s === val || b.dataset.p === val || b.dataset.sc === val));
 }
 function swatchWire(id, fn){
   const box = $(id);
@@ -154,6 +154,19 @@ async function boot(){
   imp('inPdf', addPdfFiles);
 
   /* ---------- page ops ---------- */
+  // ส่งหน้าที่เลือกไปทำต่อที่เครื่องมือ พร้อมตั้ง scope เป็น "เลือกหน้า" ให้เลย
+  // (ปกปิดข้อมูลเข้าที่หน้า redactPick ไม่ใช่ redact — ที่นั่นคือหน้าเลือกหน้า)
+  const SCOPE_SEG = { wm: 'wmScopeSeg', sign: 'sigScopeSeg',
+                      redactPick: 'rdScopeSeg', export: 'exScopeSeg' };
+  $('selTools').addEventListener('click', e => {
+    const b = e.target.closest('[data-selgo]');
+    if (!b) return;
+    if (!App.sel.size){ toast('เลือกหน้าก่อน'); return; }
+    const v = b.dataset.selgo;
+    selectSeg(SCOPE_SEG[v], 'sel');
+    showView(v);              // showView เรียก renderPickers()/wmDraw() ให้อยู่แล้ว
+  });
+
   $('btnSelAll').onclick = () => { App.pages.forEach(p => App.sel.add(p.id)); renderGrid(); };
   $('btnSelNone').onclick = () => { App.sel.clear(); renderGrid(); };
   $('btnRot').onclick = rotateSelected;

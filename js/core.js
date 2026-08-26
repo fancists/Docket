@@ -92,6 +92,7 @@ function updateHeader(){
     : n + ' หน้า · ' + files + ' ไฟล์';
   // แถวคำสั่งโผล่เฉพาะตอนเลือกหน้าไว้ (บอกจำนวนไปด้วย) — ไม่โชว์ปุ่มค้างไว้ให้สงสัยว่าใช้กับอะไร
   $('selActions').style.display = s ? '' : 'none';
+  $('selTools').style.display = s ? '' : 'none';
   $('selLabel').textContent = 'เลือกไว้ ' + s + ' หน้า';
 }
 
