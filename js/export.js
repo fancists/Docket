@@ -271,7 +271,7 @@ function showDone(blob, name, opts){
     c.className = 'btn ghost'; c.textContent = 'ใส่ลายน้ำต่อ';
     c.onclick = async () => {
       busy(true, 'กำลังเปิดไฟล์…');
-      await addPdfFiles([file]);
+      await addFiles([file]);       // เครื่องมือเดี่ยวส่งออกได้ทั้ง PDF และ JPG/PNG
       busy(false);
       showView(opts.continueTo);
     };

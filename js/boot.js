@@ -92,7 +92,7 @@ async function boot(){
       const back = App.view;                    // เลือกเสร็จกลับมาที่เครื่องมือเดิม
       openLibPicker('เลือกไฟล์จากคลัง', async file => {
         busy(true, 'กำลังเปิดไฟล์…');
-        if (/pdf/i.test(file.type)) await addPdfFiles([file]); else await addImageFiles([file]);
+        await addFiles([file]);
         busy(false);
         renderGrid();
         showView(back === 'library' || back === 'libFolder' ? 'pages' : back);
