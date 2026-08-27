@@ -135,6 +135,21 @@ body.flow #tabs{display:none}
 .chip-btn.round{padding:9px;border-radius:50%}
 .chip-btn:disabled{opacity:.4;pointer-events:none}
 .sel-label{font-size:12.5px;font-weight:700;color:var(--muted);margin-right:2px}
+/* แถวปุ่ม "ทำต่อกับที่เลือก" — 4 ปุ่มต้องลงแถวเดียวบนจอมือถือปกติ (390px)
+   ไม่งั้นแถบควบคุมกินที่เหนือตะแกรงจนแทบไม่เห็นหน้าเอกสาร */
+/* "เลือกหมด / ล้าง" คือตัวคุมการเลือก ไม่ใช่คำสั่งที่ทำอะไรกับหน้าเอกสาร
+   ทำให้เบากว่าปุ่มคำสั่ง (พื้นใส เส้นจางลง ตัวอักษรสีมัวท์) ไม่ให้แข่งสายตากับ หมุน/ลบ/ทำต่อ
+   ยังคง padding เดิมไว้ เป้าแตะไม่เล็กลงบนมือถือ */
+.chip-btn.quiet{
+  background:transparent;border-color:var(--line-2);color:var(--muted);
+  font-weight:600;font-size:12.5px;
+}
+.chip-btn.quiet .ic{width:15px;height:15px;opacity:.8}
+.chip-btn.quiet:active{background:var(--line-2);color:var(--brand)}
+
+.chips.tight{gap:6px}
+.chips.tight .chip-btn{padding:8px 11px 8px 9px;font-size:12.5px;gap:4px}
+.chips.tight .chip-btn .ic{width:14px;height:14px}
 
 /* ---------- page grid ---------- */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(102px,1fr));gap:12px}

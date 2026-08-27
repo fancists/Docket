@@ -218,9 +218,12 @@ function wireHistPicker(){
       const blob = await historyBlob(id);
       if (!blob) continue;
       const meta = list.find(r => r.id === id);
-      files.push(new File([blob], (meta && meta.name) || ('ไฟล์-' + id + '.pdf'), { type: blob.type }));
+      // ชื่อสำรองต้องเดานามสกุลจาก mime ไม่ใช่ .pdf ตายตัว — addFiles() ใช้นามสกุลตัดสินชนิด
+      // เมื่อ blob ที่ผ่าน IndexedDB มาแล้ว type ว่าง
+      const ext = /pdf/i.test(blob.type) ? '.pdf' : /png/i.test(blob.type) ? '.png' : '.jpg';
+      files.push(new File([blob], (meta && meta.name) || ('ไฟล์-' + id + ext), { type: blob.type }));
     }
-    await addPdfFiles(files);
+    await addFiles(files);          // ประวัติมีทั้ง PDF และรูป (รูปติดบัตรส่งออก JPG/PNG ได้)
     busy(false);
     if (App.view === 'home') renderHome();
     needFiles(App.view);

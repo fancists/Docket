@@ -92,6 +92,7 @@ function updateHeader(){
     : n + ' หน้า · ' + files + ' ไฟล์';
   // แถวคำสั่งโผล่เฉพาะตอนเลือกหน้าไว้ (บอกจำนวนไปด้วย) — ไม่โชว์ปุ่มค้างไว้ให้สงสัยว่าใช้กับอะไร
   $('selActions').style.display = s ? '' : 'none';
+  $('selTools').style.display = s ? '' : 'none';
   $('selLabel').textContent = 'เลือกไว้ ' + s + ' หน้า';
 }
 
@@ -236,63 +237,113 @@ function thumbOf(cv){
 }
 
 /* ---------- import: images ---------- */
-async function addImageFiles(files){
-  if (!files || !files.length) return;
+/* quiet = ไม่ต้อง toast เอง (ผู้เรียกจะสรุปให้ทีเดียว — ดู addFiles)
+   คืนรายชื่อไฟล์ที่อ่านไม่ได้ · try/catch อยู่ในลูป "ต่อไฟล์" เพราะรูปเสียใบเดียว
+   (blob ที่ผ่าน IndexedDB มาแล้วอ่านไบต์ไม่ได้ — ดู CLAUDE.md) ไม่ควรล้มทั้งชุด */
+async function addImageFiles(files, quiet){
+  if (!files || !files.length) return [];
   busy(true, 'กำลังนำเข้ารูป…');
+  const bad = [];
   try{
     for (const f of files){
-      if (!/^image\//.test(f.type)) continue;
-      const bm = await blobToBitmap(f);
-      const sc = Math.min(1, MAXDIM / Math.max(bm.width, bm.height));
-      const cv = mkCanvas(bm.width * sc, bm.height * sc);
-      cv.getContext('2d').drawImage(bm, 0, 0, cv.width, cv.height);
-      if (bm.close) bm.close();
-      const blob = await canvasToBlob(cv, 'image/jpeg', 0.95);
-      const p = {
-        id: uid(), kind: 'img', name: f.name || 'รูป', rotate: 0, overlays: [],
-        img: { blob, w: cv.width, h: cv.height,
-               enh: { mode: 'mag', bright: 0, contrast: 0 }, crop: null },
-        thumb: null
-      };
-      App.pages.push(p);
-      await refreshPageRaster(p);          // apply default enhance + thumb
-      await nextFrame();
+      if (f.type && !/^image\//.test(f.type)) continue;
+      try{
+        const bm = await blobToBitmap(f);
+        const sc = Math.min(1, MAXDIM / Math.max(bm.width, bm.height));
+        const cv = mkCanvas(bm.width * sc, bm.height * sc);
+        cv.getContext('2d').drawImage(bm, 0, 0, cv.width, cv.height);
+        if (bm.close) bm.close();
+        const blob = await canvasToBlob(cv, 'image/jpeg', 0.95);
+        const p = {
+          id: uid(), kind: 'img', name: f.name || 'รูป', rotate: 0, overlays: [],
+          img: { blob, w: cv.width, h: cv.height,
+                 enh: { mode: 'mag', bright: 0, contrast: 0 }, crop: null },
+          thumb: null
+        };
+        App.pages.push(p);
+        await refreshPageRaster(p);          // apply default enhance + thumb
+        await nextFrame();
+      } catch(e){ console.error('addImageFiles', f && f.name, e); bad.push((f && f.name) || 'รูป'); }
     }
     renderGrid();
-    toast('เพิ่มแล้ว ' + files.length + ' รูป');
+    if (!quiet){
+      if (bad.length) toast('นำเข้าไม่ได้: ' + bad.join(', '), 3500);
+      else toast('เพิ่มแล้ว ' + files.length + ' รูป');
+    }
   } catch(e){ console.error(e); toast('นำเข้ารูปไม่สำเร็จ: ' + e.message, 3500); }
-  busy(false);
+  finally { busy(false); }
+  return bad;
 }
 
 /* ---------- import: pdf ---------- */
-async function addPdfFiles(files){
-  if (!files || !files.length) return;
+/* try/catch อยู่ในลูป "ต่อไฟล์" ไม่ใช่ครอบทั้งก้อน — เดิมไฟล์เสียไฟล์เดียวทำให้ throw
+   หลุดออกจาก for ทั้งลูป ไฟล์ที่เหลือในชุดเดียวกันจึงไม่ถูกเพิ่มไปด้วย */
+async function addPdfFiles(files, quiet){
+  if (!files || !files.length) return [];
   busy(true, 'กำลังอ่าน PDF…');
+  const bad = [];
   try{
     for (const f of files){
-      const bytes = new Uint8Array(await f.arrayBuffer());
-      const srcId = 's' + (++App.seq);
-      // pdf.js consumes (detaches) the buffer it is given -> hand it a copy
-      const doc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
-      App.srcs[srcId] = { bytes, doc };
-      for (let i = 1; i <= doc.numPages; i++){
-        const pg = await doc.getPage(i);
-        const vp = pg.getViewport({ scale: 1 });
-        const p = {
-          id: uid(), kind: 'pdf', name: (f.name || 'PDF') + ' น.' + i,
-          rotate: 0, overlays: [],
-          pdf: { srcId, idx: i - 1, w: vp.width, h: vp.height },
-          thumb: null
-        };
-        p.thumb = await renderPdfThumb(pg);
-        App.pages.push(p);
-        await nextFrame();
-      }
+      try{
+        const bytes = new Uint8Array(await f.arrayBuffer());
+        const srcId = 's' + (++App.seq);
+        // pdf.js consumes (detaches) the buffer it is given -> hand it a copy
+        const doc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+        App.srcs[srcId] = { bytes, doc };
+        for (let i = 1; i <= doc.numPages; i++){
+          const pg = await doc.getPage(i);
+          const vp = pg.getViewport({ scale: 1 });
+          const p = {
+            id: uid(), kind: 'pdf', name: (f.name || 'PDF') + ' น.' + i,
+            rotate: 0, overlays: [],
+            pdf: { srcId, idx: i - 1, w: vp.width, h: vp.height },
+            thumb: null
+          };
+          p.thumb = await renderPdfThumb(pg);
+          App.pages.push(p);
+          await nextFrame();
+        }
+      } catch(e){ console.error('addPdfFiles', f && f.name, e); bad.push((f && f.name) || 'ไฟล์'); }
     }
     renderGrid();
-    toast('เพิ่ม PDF แล้ว');
+    if (!quiet){
+      if (bad.length) toast('อ่านไม่ได้: ' + bad.join(', '), 3500);
+      else toast('เพิ่ม PDF แล้ว');
+    }
   } catch(e){ console.error(e); toast('อ่าน PDF ไม่สำเร็จ: ' + e.message, 3500); }
-  busy(false);
+  finally { busy(false); }
+  return bad;
+}
+
+/* ---------- import: ประตูเดียวสำหรับ "เพิ่มไฟล์เข้าหน้าเอกสาร" ----------
+   แหล่งไฟล์หลายทาง (ประวัติ, คลังของฉัน, ปุ่ม "ใส่ลายน้ำต่อ") มี PDF กับรูปปนกันได้
+   เดิมยิงเข้า addPdfFiles() ตรงๆ รูปจึงพัง — ใช้ตัวนี้เมื่อไม่รู้ชนิดไฟล์ล่วงหน้า
+   ดูชนิดจาก mime ก่อน แล้ว fallback ไปนามสกุล (blob ที่ผ่าน IndexedDB มา type อาจว่าง)
+   เรียกเป็นช่วงๆ ตามชนิดที่ติดกัน เพื่อคงลำดับที่ผู้ใช้เลือกมา */
+const isPdfFile = f => /pdf/i.test((f && f.type) || '') ||
+                       /\.pdf$/i.test((f && f.name) || '');
+async function addFiles(files){
+  const list = (files || []).filter(Boolean);
+  if (!list.length) return;
+  const before = App.pages.length;
+  const bad = [];
+  let i = 0;
+  while (i < list.length){
+    const pdf = isPdfFile(list[i]);
+    let j = i;
+    while (j < list.length && isPdfFile(list[j]) === pdf) j++;
+    const run = list.slice(i, j);
+    const b = pdf ? await addPdfFiles(run, true) : await addImageFiles(run, true);
+    if (b && b.length) bad.push(...b);
+    i = j;
+  }
+  // สรุปเป็น toast อันเดียว — ถ้าปล่อยให้แต่ละตัวเตือนเอง อันหลังจะทับอันหน้า
+  // ผู้ใช้จะไม่เห็นเลยว่าไฟล์ไหนอ่านไม่ได้
+  const n = App.pages.length - before;
+  const msg = [];
+  if (n) msg.push('เพิ่มแล้ว ' + n + ' หน้า');
+  if (bad.length) msg.push('อ่านไม่ได้: ' + bad.join(', '));
+  if (msg.length) toast(msg.join(' · '), bad.length ? 4000 : 2200);
 }
 
 async function renderPdfThumb(pg, px){

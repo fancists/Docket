@@ -263,8 +263,7 @@ function wireLibrary(){
       busy(true, 'กำลังเปิดไฟล์…');
       const file = await libItemFile(id);
       if (file){
-        if (/pdf/i.test(file.type)) await addPdfFiles([file]);
-        else await addImageFiles([file]);
+        await addFiles([file]);
       }
       busy(false);
       renderGrid();

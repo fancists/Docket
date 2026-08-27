@@ -130,14 +130,24 @@
       </button>
 
       <div class="chips" id="selBar" style="margin-bottom:10px">
-        <button class="chip-btn" id="btnSelAll"><svg class="ic" viewBox="0 0 24 24"><use href="#i-check"/></svg>เลือกหมด</button>
-        <button class="chip-btn" id="btnSelNone"><svg class="ic" viewBox="0 0 24 24"><use href="#i-square"/></svg>ล้าง</button>
+        <button class="chip-btn quiet" id="btnSelAll"><svg class="ic" viewBox="0 0 24 24"><use href="#i-check"/></svg>เลือกหมด</button>
+        <button class="chip-btn quiet" id="btnSelNone"><svg class="ic" viewBox="0 0 24 24"><use href="#i-square"/></svg>ล้าง</button>
       </div>
       <!-- แถวคำสั่ง โผล่เฉพาะตอนเลือกหน้าไว้ — ชัดกว่าโชว์ปุ่มเทาค้างไว้ และไม่ตกบรรทัดบนจอแคบ -->
-      <div class="chips" id="selActions" style="margin-bottom:14px;display:none">
+      <div class="chips" id="selActions" style="margin-bottom:8px;display:none">
         <span class="sel-label" id="selLabel"></span>
         <button class="chip-btn" id="btnRot"><svg class="ic" viewBox="0 0 24 24"><use href="#i-rotate"/></svg>หมุน</button>
         <button class="chip-btn danger" id="btnDel"><svg class="ic" viewBox="0 0 24 24"><use href="#i-trash"/></svg>ลบ</button>
+      </div>
+
+      <!-- ส่งหน้าที่เลือกไปทำต่อ — เดิมเลือกแล้วทำได้แค่หมุน/ลบ ดูเหมือนเลือกไปแล้วไม่มีอะไรต่อ
+           ทั้งที่ App.sel เป็นตัวเดียวกับ "เลือกหน้า" ในเครื่องมือ แค่ไม่มีทางไปจากหน้านี้
+           ปุ่มพวกนี้ตั้ง scope ของเครื่องมือเป็น "เลือกหน้า" ให้เลย ไม่ต้องไปกดเองอีกรอบ -->
+      <div class="chips tight" id="selTools" style="margin-bottom:14px;display:none">
+        <button class="chip-btn" data-selgo="wm"><svg class="ic" viewBox="0 0 24 24"><use href="#i-drop"/></svg>ลายน้ำ</button>
+        <button class="chip-btn" data-selgo="sign"><svg class="ic" viewBox="0 0 24 24"><use href="#i-pen"/></svg>ลายเซ็น</button>
+        <button class="chip-btn" data-selgo="redactPick"><svg class="ic" viewBox="0 0 24 24"><use href="#i-eyeoff"/></svg>ปกปิด</button>
+        <button class="chip-btn" data-selgo="export"><svg class="ic" viewBox="0 0 24 24"><use href="#i-down"/></svg>ส่งออก</button>
       </div>
 
       <div id="grid" class="grid"></div>
